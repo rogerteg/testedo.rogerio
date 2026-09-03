@@ -13,7 +13,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
-from ..auth import COOKIE_SESSAO, criar_sessao, esta_configurado, senha_valida
+from ..auth import (
+    COOKIE_SESSAO,
+    cookie_secure,
+    criar_sessao,
+    esta_configurado,
+    senha_valida,
+)
 from ..catalogo_padrao import carregar_catalogo_padrao
 from ..config import settings
 from ..database import get_session
@@ -124,7 +130,13 @@ def login_post(
 
     if senha_valida(senha):
         resposta = RedirectResponse(url=destino, status_code=303)
-        resposta.set_cookie(COOKIE_SESSAO, criar_sessao(), httponly=True, samesite="lax")
+        resposta.set_cookie(
+            COOKIE_SESSAO,
+            criar_sessao(),
+            httponly=True,
+            samesite="lax",
+            secure=cookie_secure(),
+        )
         logger.info("Login bem-sucedido do operador configurado")
         return resposta
 

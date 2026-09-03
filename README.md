@@ -48,6 +48,7 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 | `AUTOMATIC1_SESSION_SECRET` | — | Segredo p/ assinar o cookie de sessão |
 | `AUTOMATIC1_SESSION_TTL` | `28800` | Expiração da sessão (segundos) |
 | `AUTOMATIC1_API_TOKEN` | — | Token da API REST (somente leitura) |
+| `AUTOMATIC1_COOKIE_SECURE` | `0` | `1` = cookie de sessão com flag `Secure` (HTTPS) |
 
 ## Regras de negócio (resumo)
 
@@ -158,6 +159,10 @@ O repositório contém um **`render.yaml`** (Blueprint) que cria o web service `
 Passos: **dashboard.render.com → New → Blueprint** → apontar para este repositório.
 > ⚠️ **Disco persistente exige plano pago** (não funciona no free). Para testar grátis sem
 > persistência, remova o bloco `disk` do `render.yaml` (os dados resetam a cada deploy).
+
+> 🔐 **Autenticação**: o `render.yaml` declara `AUTOMATIC1_ADMIN_PASSWORD`, `AUTOMATIC1_SESSION_SECRET`
+> e `AUTOMATIC1_API_TOKEN` como `sync: false` — defina-os no painel (secrets) após o primeiro deploy;
+> `AUTOMATIC1_COOKIE_SECURE=1` já vem configurado (HTTPS). Sem esses segredos o Admin bloqueia o acesso (FR-007).
 
 ## Solução de problemas
 

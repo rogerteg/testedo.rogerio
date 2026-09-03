@@ -26,6 +26,15 @@ services:
         value: /data/setups.db
       - key: OPERATOR_NAME
         value: admin
+      # Autenticação (feature 006) — preencha no painel do Render (secret).
+      - key: AUTOMATIC1_ADMIN_PASSWORD
+        sync: false
+      - key: AUTOMATIC1_SESSION_SECRET
+        sync: false
+      - key: AUTOMATIC1_API_TOKEN
+        sync: false
+      - key: AUTOMATIC1_COOKIE_SECURE
+        value: "1" # HTTPS no Render → cookie com flag Secure
     disk:
       name: sqlite-data
       mountPath: /data

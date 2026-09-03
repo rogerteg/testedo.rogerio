@@ -71,3 +71,8 @@ def token_api_valido(token: str) -> bool:
     if not esperado or not token:
         return False
     return hmac.compare_digest(esperado.encode(), token.encode())
+
+
+def cookie_secure() -> bool:
+    """Cookie com flag Secure quando atrás de HTTPS (ex.: deploy no Render)."""
+    return os.getenv("AUTOMATIC1_COOKIE_SECURE", "0") == "1"

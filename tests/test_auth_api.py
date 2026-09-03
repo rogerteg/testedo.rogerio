@@ -71,6 +71,13 @@ def test_login_next_sanitizado_nao_abre_redirect(client_anon):
         assert resp.headers["location"] == "/setups"
 
 
+def test_login_cookie_secure_quando_habilitado(client_anon, monkeypatch):
+    monkeypatch.setenv("AUTOMATIC1_COOKIE_SECURE", "1")
+    resp = client_anon.post("/login", data={"senha": _senha()}, follow_redirects=False)
+    assert resp.status_code == 303
+    assert "Secure" in resp.headers.get("set-cookie", "")
+
+
 def test_logout_invalida_sessao(client_anon):
     client_anon.post("/login", data={"senha": _senha()})
     saida = client_anon.get("/logout", follow_redirects=False)
