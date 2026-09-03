@@ -9,6 +9,13 @@
   </div>
 </div>
 
+{% if execucoes_count %}
+<div class="alert alert-warning">
+  ⚠️ <strong>Atenção (utilização ativa):</strong> este setup possui <strong>{{ execucoes_count }}</strong> execução(ões) registrada(s).
+  O arquivamento mantém o histórico, mas o setup deixará de aparecer na listagem ativa.
+</div>
+{% endif %}
+
 <div class="form-card">
   <form method="post" action="/setups/{{ setup.id }}/arquivar">
     <label class="field" style="display:flex; gap:.5rem; align-items:center; font-weight:600;">

@@ -71,6 +71,23 @@ Evolution API, Typebot, N8N, Appsmith, MinIO, RabbitMQ, PgAdmin4).
 Documentação do fluxo: `specs/001-environment-crud/` (`spec.md`, `plan.md`, `research.md`,
 `data-model.md`, `contracts/web.md`, `quickstart.md`, `tasks.md`) e `specs/002-seed-real-stack/`.
 
+## Máquinas alvo e execuções — feature 003
+
+O Automatic1 registra **onde** cada setup é provisionado:
+
+- **Máquinas alvo** (`/maquinas`): hosts (Debian + Docker Swarm) com nome, identificação/endereço e
+  status (`ativa`/`inativa`). Guardam **apenas metadados — nenhuma credencial** (constituição IV).
+  Desativar/reativar é reversível e exige confirmação.
+- **Execuções**: do detalhe de um setup, "Registrar execução" vincula o setup a uma máquina **ativa**
+  com status (`planejada`/`em andamento`/`sucesso`/`erro`/`cancelada`) e resumo. Nesta etapa é
+  **registro/estado** — nada é executado de fato (provisionamento real é etapa futura).
+- **Histórico** visível no detalhe do setup e da máquina; a **última execução** do setup é derivada
+  do histórico (fallback para a anotação manual da feature `001` quando não há execuções).
+- **Utilização ativa**: arquivar um setup ou desativar uma máquina **com execuções** exibe aviso com a
+  contagem antes da confirmação.
+
+Documentação do fluxo: `specs/003-machines-runs/`.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) roda em push/PR: `uv sync --frozen` → `ruff check`

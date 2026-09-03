@@ -140,3 +140,95 @@ def validar_campos(dados: dict) -> dict:
             )
 
     return erros
+
+
+# ---------------------------------------------------------------------------
+# Feature 003 — Máquinas alvo e execuções
+# ---------------------------------------------------------------------------
+
+# Estados de máquina (data-model.md) e rótulos PT-BR.
+HOST_STATUS_VALIDOS = {"ativa", "inativa"}
+HOST_STATUS_LABEL = {
+    "ativa": "Ativa",
+    "inativa": "Inativa",
+}
+
+# Estados de execução (data-model.md) e rótulos PT-BR.
+EXEC_STATUS_VALIDOS = {"planejada", "em_andamento", "sucesso", "erro", "cancelada"}
+EXEC_STATUS_LABEL = {
+    "planejada": "Planejada",
+    "em_andamento": "Em andamento",
+    "sucesso": "Sucesso",
+    "erro": "Erro",
+    "cancelada": "Cancelada",
+}
+
+# Campos de texto de máquina sujeitos à regra anti-segredo (FR-004/FR-006).
+_CAMPOS_MAQUINA_TEXTO = ("nome", "identificacao", "plataforma_alvo", "descricao")
+
+
+def validar_maquina(dados: dict) -> dict:
+    """Valida os campos de uma máquina alvo (feature 003).
+
+    Retorna ``{campo: mensagem}`` (vazio = válido). Nenhuma credencial aceita.
+    """
+    erros: dict = {}
+
+    nome = (dados.get("nome") or "").strip()
+    identificacao = (dados.get("identificacao") or "").strip()
+    plataforma = (dados.get("plataforma_alvo") or "").strip()
+    status = (dados.get("status") or "ativa").strip()
+
+    if not nome:
+        erros["nome"] = "O nome é obrigatório."
+    elif len(nome) > 120:
+        erros["nome"] = "O nome deve ter no máximo 120 caracteres."
+
+    if not identificacao:
+        erros["identificacao"] = "A identificação/endereço é obrigatória."
+    elif len(identificacao) > 255:
+        erros["identificacao"] = "A identificação deve ter no máximo 255 caracteres."
+
+    if plataforma and len(plataforma) > 60:
+        erros["plataforma_alvo"] = "A plataforma alvo deve ter no máximo 60 caracteres."
+
+    if status not in HOST_STATUS_VALIDOS:
+        erros["status"] = "Status inválido."
+
+    descricao = (dados.get("descricao") or "").strip()
+    if len(descricao) > 1000:
+        erros["descricao"] = "A descrição deve ter no máximo 1000 caracteres."
+
+    for campo in _CAMPOS_MAQUINA_TEXTO:
+        valor = dados.get(campo)
+        if isinstance(valor, str) and contem_segredo(valor):
+            erros[campo] = (
+                "Não são permitidos segredos/credenciais neste campo; informe apenas "
+                "referências ou placeholders (FR-004)."
+            )
+
+    return erros
+
+
+def validar_execucao(dados: dict) -> dict:
+    """Valida os campos de uma execução (feature 003).
+
+    A existência/atividade da máquina e do setup é checada na camada de rota
+    (depende do banco). Retorna ``{campo: mensagem}`` (vazio = válido).
+    """
+    erros: dict = {}
+
+    status = (dados.get("status") or "").strip()
+    if status not in EXEC_STATUS_VALIDOS:
+        erros["status"] = "Status de execução inválido."
+
+    resumo = (dados.get("resumo") or "").strip()
+    if len(resumo) > 1000:
+        erros["resumo"] = "O resumo deve ter no máximo 1000 caracteres."
+    if resumo and contem_segredo(resumo):
+        erros["resumo"] = (
+            "Não são permitidos segredos/credenciais no resumo; informe apenas "
+            "referências ou placeholders (FR-004)."
+        )
+
+    return erros

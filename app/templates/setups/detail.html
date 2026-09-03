@@ -9,6 +9,7 @@
   </div>
   <div class="nav">
     <a class="btn" href="/setups">← Listagem</a>
+    <a class="btn" href="/setups/{{ setup.id }}/executar">⚙️ Registrar execução</a>
     <a class="btn" href="/setups/{{ setup.id }}/editar">✏️ Editar</a>
     {% if setup.status != "arquivado" %}
     <a class="btn btn-danger" href="/setups/{{ setup.id }}/arquivar">🗑️ Arquivar</a>
@@ -27,7 +28,18 @@
   <dt>Hash / checksum</dt><dd>{% if setup.hash %}<code>{{ setup.hash }}</code>{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
   <dt>Licença / compliance</dt><dd>{% if setup.licenca %}{{ setup.licenca }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
   <dt>Descrição</dt><dd>{% if setup.descricao %}{{ setup.descricao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
-  <dt>Resultado última execução</dt><dd>{% if setup.resultado_ultima_execucao %}{{ setup.resultado_ultima_execucao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Última execução</dt>
+  <dd>
+    {% if ultima_execucao %}
+      <span class="pill pill-{{ ultima_execucao.status }}">{{ exec_status_label.get(ultima_execucao.status, ultima_execucao.status) }}</span>
+      {% if ultima_execucao.resumo %} — {{ ultima_execucao.resumo }}{% endif %}
+      <div class="nao-informado">Em {{ ultima_execucao.created_at.strftime("%d/%m/%Y %H:%M") }}{% if ultima_execucao.created_by %} por {{ ultima_execucao.created_by }}{% endif %} · derivado do histórico</div>
+    {% elif setup.resultado_ultima_execucao %}
+      {{ setup.resultado_ultima_execucao }}
+    {% else %}
+      <span class="nao-informado">não informado</span>
+    {% endif %}
+  </dd>
   <dt>Criado</dt>
   <dd>
     {{ setup.created_at.strftime("%d/%m/%Y %H:%M") }}
@@ -39,4 +51,36 @@
     {% if setup.updated_by %} por {{ setup.updated_by }}{% endif %}
   </dd>
 </dl>
+
+{% if execucoes %}
+<div class="card" style="margin-top: 1.25rem;">
+  <h2>Histórico de execuções</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Máquina</th>
+        <th>Status</th>
+        <th>Resumo</th>
+        <th>Quando</th>
+        <th>Por</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in execucoes %}
+      <tr>
+        <td>
+          {% if hosts.get(e.target_host_id) %}
+          <a href="/maquinas/{{ e.target_host_id }}">{{ hosts[e.target_host_id].nome }}</a>
+          {% else %}máquina #{{ e.target_host_id }}{% endif %}
+        </td>
+        <td><span class="pill pill-{{ e.status }}">{{ exec_status_label.get(e.status, e.status) }}</span></td>
+        <td>{% if e.resumo %}{{ e.resumo }}{% else %}<span class="nao-informado">sem resumo</span>{% endif %}</td>
+        <td>{{ e.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td>{{ e.created_by or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 {% endblock %}

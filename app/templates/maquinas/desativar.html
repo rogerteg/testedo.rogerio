@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Desativar "{{ maquina.nome }}"</h1>
+    <div class="sub">Desativar é reversível: a máquina sai do uso ativo, mas pode ser reativada depois (auditável).</div>
+  </div>
+</div>
+
+{% if execucoes_count %}
+<div class="alert alert-warning">
+  ⚠️ <strong>Atenção (utilização ativa):</strong> esta máquina possui <strong>{{ execucoes_count }}</strong> execução(ões) registrada(s).
+  A desativação mantém o histórico, mas a máquina deixa de estar disponível para novas execuções.
+</div>
+{% endif %}
+
+<div class="form-card">
+  <form method="post" action="/maquinas/{{ maquina.id }}/desativar">
+    <label class="field" style="display:flex; gap:.5rem; align-items:center; font-weight:600;">
+      <input type="checkbox" name="confirmacao" value="sim" required>
+      Confirmo que desejo desativar esta máquina.
+    </label>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-danger">Confirmar desativação</button>
+      <a class="btn" href="/maquinas/{{ maquina.id }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

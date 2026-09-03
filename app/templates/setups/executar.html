@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Registrar execução</h1>
+    <div class="sub">Setup: <strong>{{ setup.nome }}</strong> — registra um estado/execução numa máquina ativa (nesta etapa nada é executado de fato; provisionamento real é etapa futura).</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <form method="post" action="/setups/{{ setup.id }}/executar">
+    <div class="field">
+      <label for="target_host_id">Máquina alvo <span class="req">*</span></label>
+      <select id="target_host_id" name="target_host_id" required>
+        <option value="">Selecione...</option>
+        {% for m in maquinas %}
+        <option value="{{ m.id }}" {% if dados.target_host_id == m.id|string %}selected{% endif %}>{{ m.nome }} ({{ m.identificacao }})</option>
+        {% endfor %}
+      </select>
+      {% if erros.target_host_id %}<div class="field-error">{{ erros.target_host_id }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="status">Status da execução <span class="req">*</span></label>
+      <select id="status" name="status">
+        {% for valor, rotulo in exec_status_opcoes %}
+        <option value="{{ valor }}" {% if dados.status == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+      {% if erros.status %}<div class="field-error">{{ erros.status }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="resumo">Resumo / observações</label>
+      <textarea id="resumo" name="resumo" rows="3" maxlength="1000">{{ dados.resumo }}</textarea>
+      <div class="hint">Log ou observação opcional. Sem credenciais (FR-004).</div>
+      {% if erros.resumo %}<div class="field-error">{{ erros.resumo }}</div>{% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Registrar execução</button>
+      <a class="btn" href="/setups/{{ setup.id }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

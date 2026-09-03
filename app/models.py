@@ -28,3 +28,45 @@ class EnvironmentSetup(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_utcnow)
     created_by: str | None = Field(default=None, max_length=120)
     updated_by: str | None = Field(default=None, max_length=120)
+
+
+# Plataforma/ambiente-alvo padrão (features 002/003 — valor controlado).
+PLATAFORMA_PADRAO = "Debian + Docker Swarm"
+
+
+class TargetHost(SQLModel, table=True):
+    """Máquina alvo onde o Automatic1 pode provisionar setups (feature 003).
+
+    Apenas metadados — **nenhuma credencial** (constituição IV / FR-004).
+    """
+
+    __tablename__ = "target_host"
+
+    id: int | None = Field(default=None, primary_key=True)
+    nome: str = Field(index=True, max_length=120)
+    identificacao: str = Field(max_length=255)
+    plataforma_alvo: str = Field(default=PLATAFORMA_PADRAO, max_length=60)
+    descricao: str | None = Field(default=None, max_length=1000)
+    status: str = Field(default="ativa", index=True, max_length=32)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+    created_by: str | None = Field(default=None, max_length=120)
+    updated_by: str | None = Field(default=None, max_length=120)
+
+
+class Execution(SQLModel, table=True):
+    """Registro (imutável) de execução de um setup numa máquina — feature 003.
+
+    Nesta etapa é **registro/estado**: nenhuma execução real é disparada
+    (provisionamento real = Etapa 3 / feature 004).
+    """
+
+    __tablename__ = "execution"
+
+    id: int | None = Field(default=None, primary_key=True)
+    setup_id: int = Field(foreign_key="environment_setup.id", index=True)
+    target_host_id: int = Field(foreign_key="target_host.id", index=True)
+    status: str = Field(index=True, max_length=32)
+    resumo: str | None = Field(default=None, max_length=1000)
+    created_at: datetime = Field(default_factory=_utcnow)
+    created_by: str | None = Field(default=None, max_length=120)

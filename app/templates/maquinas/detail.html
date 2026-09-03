@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ maquina.nome }} <span class="pill pill-{{ maquina.status }}">{{ host_status_label.get(maquina.status, maquina.status) }}</span></h1>
+    <div class="sub">Detalhes da máquina alvo.</div>
+  </div>
+  <div class="nav">
+    <a class="btn" href="/maquinas">← Listagem</a>
+    <a class="btn" href="/maquinas/{{ maquina.id }}/editar">✏️ Editar</a>
+    {% if maquina.status == "ativa" %}
+    <form method="get" action="/maquinas/{{ maquina.id }}/desativar" style="display:inline;">
+      <button type="submit" class="btn btn-danger">⏸️ Desativar</button>
+    </form>
+    {% else %}
+    <form method="post" action="/maquinas/{{ maquina.id }}/reativar" style="display:inline;">
+      <button type="submit" class="btn btn-primary">▶️ Reativar</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<dl class="detail-grid">
+  <dt>Nome</dt><dd>{{ maquina.nome }}</dd>
+  <dt>Identificação</dt><dd>{{ maquina.identificacao }}</dd>
+  <dt>Plataforma / ambiente</dt><dd>{{ maquina.plataforma_alvo }}</dd>
+  <dt>Status</dt><dd>{{ host_status_label.get(maquina.status, maquina.status) }}</dd>
+  <dt>Descrição</dt><dd>{% if maquina.descricao %}{{ maquina.descricao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Criado</dt>
+  <dd>
+    {{ maquina.created_at.strftime("%d/%m/%Y %H:%M") }}
+    {% if maquina.created_by %} por {{ maquina.created_by }}{% endif %}
+  </dd>
+  <dt>Atualizado</dt>
+  <dd>
+    {{ maquina.updated_at.strftime("%d/%m/%Y %H:%M") }}
+    {% if maquina.updated_by %} por {{ maquina.updated_by }}{% endif %}
+  </dd>
+</dl>
+
+{% if execucoes %}
+<div class="card" style="margin-top: 1.25rem;">
+  <h2>Histórico de execuções nesta máquina</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Setup</th>
+        <th>Status</th>
+        <th>Resumo</th>
+        <th>Quando</th>
+        <th>Por</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in execucoes %}
+      <tr>
+        <td>
+          {% if setups.get(e.setup_id) %}
+          <a href="/setups/{{ e.setup_id }}">{{ setups[e.setup_id].nome }}</a>
+          {% else %}setup #{{ e.setup_id }}{% endif %}
+        </td>
+        <td><span class="pill pill-{{ e.status }}">{{ exec_status_label.get(e.status, e.status) }}</span></td>
+        <td>{% if e.resumo %}{{ e.resumo }}{% else %}<span class="nao-informado">sem resumo</span>{% endif %}</td>
+        <td>{{ e.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td>{{ e.created_by or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="nao-informado" style="margin-top: 1rem;">Nenhuma execução registrada nesta máquina.</p>
+{% endif %}
+{% endblock %}

@@ -136,3 +136,7 @@ td a:hover { text-decoration: underline; }
 table .pill-cat { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; background: var(--surface-alt, #eef2f7); color: var(--muted); border: 1px solid var(--border); }
 .pill-cat.infraestrutura_base { background: #eef4ff; color: #1d4ed8; border-color: #c7d7fe; }
 .pill-cat.aplicacao { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+
+/* Feature 003 — aviso de "utilização ativa" (arquivamento/desativação) */
+.alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.alert-warning strong { color: #78350f; }

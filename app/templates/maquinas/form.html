@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="sub">Máquinas guardam apenas metadados — <strong>nenhuma credencial</strong> (senha, token ou chave) é armazenada (FR-004).</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <form method="post" action="{{ acao }}">
+    <div class="field">
+      <label for="nome">Nome <span class="req">*</span></label>
+      <input type="text" id="nome" name="nome" value="{{ dados.nome }}" maxlength="120" required>
+      {% if erros.nome %}<div class="field-error">{{ erros.nome }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="identificacao">Identificação / endereço <span class="req">*</span></label>
+      <input type="text" id="identificacao" name="identificacao" value="{{ dados.identificacao }}" maxlength="255" required>
+      <div class="hint">Ex.: IP ou hostname do servidor. Sem credenciais.</div>
+      {% if erros.identificacao %}<div class="field-error">{{ erros.identificacao }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="plataforma_alvo">Plataforma / ambiente</label>
+      <input type="text" id="plataforma_alvo" name="plataforma_alvo" value="{{ dados.plataforma_alvo }}" maxlength="60">
+      {% if erros.plataforma_alvo %}<div class="field-error">{{ erros.plataforma_alvo }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="descricao">Descrição</label>
+      <textarea id="descricao" name="descricao" rows="3" maxlength="1000">{{ dados.descricao }}</textarea>
+      {% if erros.descricao %}<div class="field-error">{{ erros.descricao }}</div>{% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">{{ botao|default("Salvar máquina") }}</button>
+      <a class="btn" href="/maquinas">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

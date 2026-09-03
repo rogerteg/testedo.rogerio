@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="sub">Hosts onde o Automatic1 pode provisionar setups (apenas metadados — sem credenciais).</div>
+  </div>
+  <a class="btn btn-primary" href="/maquinas/novo">+ Nova máquina</a>
+</div>
+
+<form class="search" method="get" action="/maquinas">
+  <input type="search" name="q" value="{{ termo }}" placeholder="Buscar por nome ou identificação..." aria-label="Buscar">
+  <button type="submit" class="btn">Buscar</button>
+  {% if termo %}<a class="btn" href="/maquinas">Limpar</a>{% endif %}
+</form>
+
+<div class="card">
+  {% if maquinas %}
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Identificação</th>
+        <th>Plataforma</th>
+        <th>Status</th>
+        <th>Atualizado em</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in maquinas %}
+      <tr>
+        <td><a href="/maquinas/{{ m.id }}">{{ m.nome }}</a></td>
+        <td>{{ m.identificacao }}</td>
+        <td>{{ m.plataforma_alvo }}</td>
+        <td><span class="pill pill-{{ m.status }}">{{ host_status_label.get(m.status, m.status) }}</span></td>
+        <td>{{ m.updated_at.strftime("%d/%m/%Y %H:%M") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% elif termo %}
+  <div class="empty">
+    <div class="big">🔍</div>
+    <p><strong>Nada encontrado</strong> para "{{ termo }}".</p>
+    <p>Tente ajustar o filtro ou <a href="/maquinas/novo">cadastre uma nova máquina</a>.</p>
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="big">🖥️</div>
+    <p><strong>Nenhuma máquina cadastrada ainda.</strong></p>
+    <p>Cadastre o primeiro host onde os setups do catálogo são provisionados.</p>
+    <p><a class="btn btn-primary" href="/maquinas/novo">+ Nova máquina</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
