@@ -22,6 +22,7 @@ class EnvironmentSetup(SQLModel, table=True):
     hash: str | None = Field(default=None, max_length=256)
     licenca: str | None = Field(default=None, max_length=500)
     status: str = Field(default="rascunho", index=True, max_length=32)
+    categoria: str | None = Field(default=None, index=True, max_length=32)
     resultado_ultima_execucao: str | None = Field(default=None, max_length=1000)
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)

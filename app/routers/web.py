@@ -13,10 +13,18 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
+from ..catalogo_padrao import carregar_catalogo_padrao
 from ..config import settings
 from ..database import get_session
 from ..models import EnvironmentSetup
-from ..schemas import STATUS_LABEL, normalizar_nome, validar_campos
+from ..schemas import (
+    CATEGORIA_LABEL,
+    CATEGORIA_VALIDOS,
+    STATUS_LABEL,
+    normalizar_nome,
+    rotulo_categoria,
+    validar_campos,
+)
 
 router = APIRouter()
 templates = Jinja2Templates(
@@ -166,7 +174,11 @@ def listar_setups(
     request: Request,
     session: Session = Depends(get_session),
     q: Annotated[str, Query()] = "",
+    categoria: Annotated[str, Query()] = "",
     sucesso: Annotated[str, Query()] = "",
+    criados: Annotated[int, Query()] = 0,
+    ignorados: Annotated[int, Query()] = 0,
+    avisos: Annotated[int, Query()] = 0,
 ) -> HTMLResponse:
     termo = q.strip()
     statement = select(EnvironmentSetup).where(EnvironmentSetup.status != "arquivado")
@@ -180,6 +192,10 @@ def listar_setups(
             if filtro in r.nome.lower() or filtro in r.plataforma_alvo.lower()
         ]
 
+    # Filtro por categoria (FR-007 — feature 002)
+    if categoria in CATEGORIA_VALIDOS:
+        registros = [r for r in registros if r.categoria == categoria]
+
     registros.sort(key=lambda r: r.updated_at, reverse=True)
 
     mensagem = None
@@ -187,6 +203,15 @@ def listar_setups(
         mensagem = {"tipo": "success", "texto": "Setup cadastrado com sucesso."}
     elif sucesso == "registro_arquivado":
         mensagem = {"tipo": "success", "texto": "Setup arquivado com sucesso."}
+    elif sucesso == "catalogo_carregado":
+        # FR-008/FR-014: relatório da carga do catálogo padrão (feature 002).
+        texto = (
+            f"Catálogo padrão carregado: {criados} criado(s), "
+            f"{ignorados} ignorado(s)."
+        )
+        if avisos:
+            texto += f" {avisos} aviso(s) — itens bloqueados por suspeita de segredo não foram criados."
+        mensagem = {"tipo": "success", "texto": texto}
 
     return templates.TemplateResponse(
         request,
@@ -195,10 +220,30 @@ def listar_setups(
             "title": "Setups de ambiente",
             "setups": registros,
             "termo": termo,
+            "categoria_filtro": categoria,
+            "categoria_label": CATEGORIA_LABEL,
             "status_label": STATUS_LABEL,
             "mensagem": mensagem,
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Feature 002 — Carregar catálogo padrão (POST /setups/carregar-padrao)
+# ---------------------------------------------------------------------------
+
+@router.post("/setups/carregar-padrao")
+def carregar_padrao(
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    relatorio = carregar_catalogo_padrao(session, autor=settings.operator_name)
+    query = (
+        f"sucesso=catalogo_carregado&criados={relatorio['criados']}"
+        f"&ignorados={relatorio['ignorados']}"
+    )
+    if relatorio["avisos"]:
+        query += f"&avisos={len(relatorio['avisos'])}"
+    return RedirectResponse(url=f"/setups?{query}", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -225,6 +270,7 @@ def detalhe_setup(
             "title": setup.nome,
             "setup": setup,
             "status_label": STATUS_LABEL,
+            "categoria_rotulo": rotulo_categoria(setup.categoria),
             "mensagem": mensagem,
         },
     )

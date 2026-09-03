@@ -14,6 +14,13 @@ STATUS_LABEL = {
     "arquivado": "Arquivado",
 }
 
+# Categorias do catálogo (feature 002) — data-model.md; rótulos PT-BR.
+CATEGORIA_VALIDOS = {"infraestrutura_base", "aplicacao"}
+CATEGORIA_LABEL = {
+    "infraestrutura_base": "Infraestrutura base",
+    "aplicacao": "Aplicação",
+}
+
 # SemVer: MAJOR.MINOR.PATCH [+ pre-release] [+ build]  (FR-003)
 SEMVER_RE = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
@@ -58,6 +65,13 @@ _SINAIS_SEGREDO = (
 def normalizar_nome(nome: str) -> str:
     """Nome normalizado para unicidade — caixa/whitespace-insensitive (FR-002)."""
     return " ".join(nome.split()).lower()
+
+
+def rotulo_categoria(valor: str | None) -> str:
+    """Rótulo PT-BR de categoria; None/vazio → 'não classificada' (feature 002)."""
+    if not valor:
+        return "não classificada"
+    return CATEGORIA_LABEL.get(valor, valor)
 
 
 def contem_segredo(texto: str) -> bool:

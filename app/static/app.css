@@ -127,3 +127,12 @@ td a:hover { text-decoration: underline; }
 .detail-grid dt { font-weight: 600; color: var(--muted); }
 .detail-grid dd { margin: 0 0 0.6rem 0; }
 .detail-grid dd.nao-informado { color: var(--muted); font-style: italic; }
+
+/* Feature 002 — ações inline (carga do catálogo padrão) e filtro por categoria */
+.actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.actions form { display: inline; margin: 0; }
+.actions .btn, .actions button.btn { white-space: nowrap; }
+.search select.cat { padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 0.95rem; }
+table .pill-cat { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; background: var(--surface-alt, #eef2f7); color: var(--muted); border: 1px solid var(--border); }
+.pill-cat.infraestrutura_base { background: #eef4ff; color: #1d4ed8; border-color: #c7d7fe; }
+.pill-cat.aplicacao { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }

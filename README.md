@@ -3,6 +3,9 @@
 Interface web de administração interna para o catálogo de **setups de ambiente** que o
 [Automatic1] provisiona. **v1** entrega **criar + listar** (P1); detalhes, edição e
 arquivamento ficam para slices futuras (veja `specs/001-environment-crud/spec.md`).
+A feature **`002` (catálogo padrão)** adiciona a ação "**Carregar catálogo padrão**",
+que popula o catálogo com a stack de referência do Automatic1 (Debian + Docker Swarm) e o
+campo **categoria** (infraestrutura base vs aplicação) — veja `specs/002-seed-real-stack/spec.md`.
 
 Stack: Python 3.11+ · FastAPI · SQLModel · SQLite · Jinja2 · pytest (uv).
 
@@ -49,8 +52,24 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 - **Sem segredos/credenciais** nos dados (apenas referências/placeholders).
 - Auditoria de **autor + data** em criação (sem auth no v1 → `OPERATOR_NAME`).
 
+## Catálogo padrão (stack de referência) — feature 002
+
+O botão "**Carregar catálogo padrão**" (na listagem e no estado vazio) insere a stack que o
+Automatic1 provisiona em **Debian + Docker Swarm**: **7 infraestrutura base** (Docker Engine,
+Docker Swarm, Traefik, Portainer, PostgreSQL, MongoDB, Redis) + **8 aplicações** (Chatwoot,
+Evolution API, Typebot, N8N, Appsmith, MinIO, RabbitMQ, PgAdmin4).
+
+- Cada registro padrão traz `plataforma_alvo = "Debian + Docker Swarm"`, **categoria**
+  (infraestrutura base vs aplicação) e a **origem do asset** apontando para o upstream
+  (referência, sem copiar conteúdo — constituição IV). Versão/hash ficam **"não informado"**
+  (nada é inventado) e a licença é referência inicial conferível no upstream.
+- A carga é **aditiva e não destrutiva**: recarregar **não duplica** e **nunca altera/remove**
+  registros existentes (nem os do usuário). O relatório pós-carga mostra criados/ignorados/avisos.
+- O manifesto vive em `app/catalogo_padrao.py` (fonte única) e a suíte de testes em
+  `tests/test_catalogo_padrao.py`.
+
 Documentação do fluxo: `specs/001-environment-crud/` (`spec.md`, `plan.md`, `research.md`,
-`data-model.md`, `contracts/web.md`, `quickstart.md`, `tasks.md`).
+`data-model.md`, `contracts/web.md`, `quickstart.md`, `tasks.md`) e `specs/002-seed-real-stack/`.
 
 ## CI
 

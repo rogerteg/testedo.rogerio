@@ -20,6 +20,8 @@
   <dt>Nome</dt><dd>{{ setup.nome }}</dd>
   <dt>Plataforma alvo</dt><dd>{{ setup.plataforma_alvo }}</dd>
   <dt>Status</dt><dd>{{ status_label.get(setup.status, setup.status) }}</dd>
+  <dt>Categoria</dt>
+  <dd>{% if setup.categoria %}<span class="pill-cat {{ setup.categoria }}">{{ categoria_rotulo }}</span>{% else %}<span class="nao-informado">{{ categoria_rotulo }}</span>{% endif %}</dd>
   <dt>Versão</dt><dd>{% if setup.versao %}{{ setup.versao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
   <dt>Origem do asset</dt><dd>{{ setup.origem_asset }}</dd>
   <dt>Hash / checksum</dt><dd>{% if setup.hash %}<code>{{ setup.hash }}</code>{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
