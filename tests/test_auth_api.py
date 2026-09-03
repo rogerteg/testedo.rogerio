@@ -61,6 +61,16 @@ def test_login_sucesso_concede_acesso(client_anon):
     assert pagina.status_code == 200
 
 
+def test_login_next_sanitizado_nao_abre_redirect(client_anon):
+    # `next` com prefixo externo (// ou \) deve cair no destino interno padrão.
+    for externo in ("//evil.example", "\\evil.example"):
+        resp = client_anon.post(
+            "/login", data={"senha": _senha(), "next": externo}, follow_redirects=False
+        )
+        assert resp.status_code == 303
+        assert resp.headers["location"] == "/setups"
+
+
 def test_logout_invalida_sessao(client_anon):
     client_anon.post("/login", data={"senha": _senha()})
     saida = client_anon.get("/logout", follow_redirects=False)

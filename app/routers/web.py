@@ -69,9 +69,14 @@ def healthz() -> HTMLResponse:
 # ---------------------------------------------------------------------------
 
 def _sanitizar_next(next_url: str) -> str:
-    """Só permite redirecionamento interno (caminho único) — evita open redirect."""
-    if next_url.startswith("/") and not next_url.startswith("//"):
-        return next_url
+    """Só permite redirecionamento interno (caminho único) — evita open redirect.
+
+    Bloqueia também prefixo com barra invertida (alguns navegadores tratam ``\\``
+    como separador de path absoluto).
+    """
+    destino = (next_url or "").strip()
+    if destino.startswith("/") and not destino.startswith(("//", "\\")):
+        return destino
     return "/setups"
 
 
