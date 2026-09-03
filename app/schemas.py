@@ -60,7 +60,8 @@ def normalizar_nome(nome: str) -> str:
     return " ".join(nome.split()).lower()
 
 
-def _contem_segredo(texto: str) -> bool:
+def contem_segredo(texto: str) -> bool:
+    """True se o texto contiver sinais de segredo/credencial (FR-013/SC-005)."""
     baixo = texto.lower()
     return any(sinal in baixo for sinal in _SINAIS_SEGREDO)
 
@@ -118,7 +119,7 @@ def validar_campos(dados: dict) -> dict:
 
     for campo in CAMPOS_TEXTO:
         valor = dados.get(campo)
-        if isinstance(valor, str) and _contem_segredo(valor):
+        if isinstance(valor, str) and contem_segredo(valor):
             erros[campo] = (
                 "Não são permitidos segredos/credenciais neste campo; informe apenas "
                 "referências ou placeholders (FR-013)."
