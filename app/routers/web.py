@@ -17,6 +17,8 @@ from ..catalogo_padrao import carregar_catalogo_padrao
 from ..config import settings
 from ..database import get_session
 from ..models import PLATAFORMA_PADRAO, EnvironmentSetup, Execution, TargetHost
+from ..provisioner import ProvisionamentoError, avaliar, provisionar
+from ..runners import criar_runner
 from ..schemas import (
     CATEGORIA_LABEL,
     CATEGORIA_VALIDOS,
@@ -291,6 +293,11 @@ def detalhe_setup(
         mensagem = {"tipo": "success", "texto": "Setup atualizado com sucesso."}
     elif sucesso == "execucao_registrada":
         mensagem = {"tipo": "success", "texto": "Execução registrada com sucesso."}
+    elif sucesso == "execucao_provisionada":
+        mensagem = {
+            "tipo": "success",
+            "texto": "Provisionamento executado — confira o status e o log no histórico.",
+        }
 
     # Feature 003 — histórico de execuções do setup + última execução derivada (Q3=A).
     execucoes = _execucoes(session, setup_id=setup_id)
@@ -839,3 +846,120 @@ def registrar_execucao(
         settings.operator_name,
     )
     return RedirectResponse(url=f"/setups/{setup.id}?sucesso=execucao_registrada", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Feature 004 — Provisionador real (GET/POST /setups/{id}/provisionar)
+# ---------------------------------------------------------------------------
+
+def _render_provisionar(
+    request: Request,
+    *,
+    setup: EnvironmentSetup,
+    maquinas: list[TargetHost],
+    erros: list[str],
+    avisos: list[str],
+    ok: bool,
+    dados: dict,
+    mensagem: dict | None,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "setups/provisionar.html",
+        {
+            "title": f"Provisionar: {setup.nome}",
+            "setup": setup,
+            "maquinas": maquinas,
+            "erros": erros,
+            "avisos": avisos,
+            "ok": ok,
+            "dados": dados,
+            "mensagem": mensagem,
+        },
+    )
+
+
+@router.get("/setups/{setup_id}/provisionar")
+def provisionar_form(
+    request: Request,
+    setup_id: int,
+    session: Session = Depends(get_session),
+    maquina: Annotated[str, Query()] = "",
+) -> HTMLResponse:
+    setup = _obter_setup(session, setup_id)
+    maquinas = session.exec(
+        select(TargetHost).where(TargetHost.status == "ativa").order_by(TargetHost.nome)
+    ).all()
+    host: TargetHost | None = None
+    if maquina.strip().isdigit():
+        host = session.get(TargetHost, int(maquina))
+
+    runner = criar_runner()
+    situacao = avaliar(setup, host, runner)
+    dados = {"target_host_id": str(host.id) if host else "", "confirmacao": ""}
+    return _render_provisionar(
+        request,
+        setup=setup,
+        maquinas=maquinas,
+        erros=situacao["erros"],
+        avisos=situacao["avisos"],
+        ok=situacao["ok"],
+        dados=dados,
+        mensagem=None,
+    )
+
+
+@router.post("/setups/{setup_id}/provisionar")
+def executar_provisionamento(
+    request: Request,
+    setup_id: int,
+    session: Session = Depends(get_session),
+    target_host_id: Annotated[str, Form()] = "",
+    confirmacao: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    setup = _obter_setup(session, setup_id)
+    maquinas = session.exec(
+        select(TargetHost).where(TargetHost.status == "ativa").order_by(TargetHost.nome)
+    ).all()
+
+    host: TargetHost | None = None
+    if target_host_id.strip().isdigit():
+        host = session.get(TargetHost, int(target_host_id.strip()))
+
+    runner = criar_runner()
+    situacao = avaliar(setup, host, runner)
+    dados = {"target_host_id": target_host_id, "confirmacao": confirmacao}
+
+    if host is None:
+        situacao["erros"].append("Selecione uma máquina ativa para provisionar.")
+    if confirmacao != "sim":
+        situacao["erros"].append("Confirme a ação para provisionar.")
+    situacao["ok"] = not situacao["erros"]
+
+    if not situacao["ok"]:
+        return _render_provisionar(
+            request,
+            setup=setup,
+            maquinas=maquinas,
+            erros=situacao["erros"],
+            avisos=situacao["avisos"],
+            ok=situacao["ok"],
+            dados=dados,
+            mensagem={"tipo": "error", "texto": "Não foi possível provisionar. Corrija os pontos abaixo."},
+        )
+
+    try:
+        provisionar(session, runner, setup, host, autor=settings.operator_name)
+    except ProvisionamentoError as exc:
+        return _render_provisionar(
+            request,
+            setup=setup,
+            maquinas=maquinas,
+            erros=[str(exc)],
+            avisos=situacao["avisos"],
+            ok=False,
+            dados=dados,
+            mensagem={"tipo": "error", "texto": "Provisionamento bloqueado."},
+        )
+
+    return RedirectResponse(url=f"/setups/{setup.id}?sucesso=execucao_provisionada", status_code=303)

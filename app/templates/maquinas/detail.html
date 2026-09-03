@@ -49,6 +49,8 @@
         <th>Setup</th>
         <th>Status</th>
         <th>Resumo</th>
+        <th>Exit</th>
+        <th>Log</th>
         <th>Quando</th>
         <th>Por</th>
       </tr>
@@ -63,6 +65,8 @@
         </td>
         <td><span class="pill pill-{{ e.status }}">{{ exec_status_label.get(e.status, e.status) }}</span></td>
         <td>{% if e.resumo %}{{ e.resumo }}{% else %}<span class="nao-informado">sem resumo</span>{% endif %}</td>
+        <td>{% if e.exit_code is not none %}<code>{{ e.exit_code }}</code>{% else %}—{% endif %}</td>
+        <td>{% if e.log %}<details><summary>ver log</summary><pre class="log">{{ e.log }}</pre></details>{% else %}—{% endif %}</td>
         <td>{{ e.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
         <td>{{ e.created_by or "—" }}</td>
       </tr>

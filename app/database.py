@@ -14,17 +14,28 @@ engine = create_engine(
 
 
 def _migrar_schema() -> None:
-    """Migrações aditivas idempotentes (feature 002, research D5).
+    """Migrações aditivas idempotentes (features 002/004, research).
 
-    `create_all` não adiciona colunas em tabelas existentes; bancos criados
-    pela feature `001` precisam da coluna ``categoria`` adicionada via ALTER.
+    `create_all` não adiciona colunas em tabelas existentes; colunas novas são
+    adicionadas via ALTER quando ausentes (PRAGMA table_info).
     """
     with engine.begin() as conn:
-        colunas = [linha[1] for linha in conn.execute(text("PRAGMA table_info(environment_setup)"))]
-        if "categoria" not in colunas:
-            conn.execute(
-                text("ALTER TABLE environment_setup ADD COLUMN categoria VARCHAR(32)")
-            )
+        def _garantir_colunas(tabela: str, adicoes: dict[str, str]) -> None:
+            colunas = {linha[1] for linha in conn.execute(text(f"PRAGMA table_info({tabela})"))}
+            for nome, tipo in adicoes.items():
+                if nome not in colunas:
+                    conn.execute(text(f"ALTER TABLE {tabela} ADD COLUMN {nome} {tipo}"))
+
+        _garantir_colunas("environment_setup", {"categoria": "VARCHAR(32)"})
+        _garantir_colunas(
+            "execution",
+            {
+                "log": "TEXT",
+                "exit_code": "INTEGER",
+                "started_at": "DATETIME",
+                "finished_at": "DATETIME",
+            },
+        )
 
 
 def init_db() -> None:

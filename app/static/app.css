@@ -140,3 +140,8 @@ table .pill-cat { display: inline-block; padding: 0.15rem 0.55rem; border-radius
 /* Feature 003 — aviso de "utilização ativa" (arquivamento/desativação) */
 .alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
 .alert-warning strong { color: #78350f; }
+
+/* Feature 004 — log de execução real */
+.alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+pre.log { background: #0f172a; color: #e2e8f0; padding: 0.75rem; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap; }
+td details summary { cursor: pointer; color: var(--primary); }

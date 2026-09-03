@@ -10,6 +10,7 @@
   <div class="nav">
     <a class="btn" href="/setups">← Listagem</a>
     <a class="btn" href="/setups/{{ setup.id }}/executar">⚙️ Registrar execução</a>
+    <a class="btn" href="/setups/{{ setup.id }}/provisionar">⚡ Provisionar</a>
     <a class="btn" href="/setups/{{ setup.id }}/editar">✏️ Editar</a>
     {% if setup.status != "arquivado" %}
     <a class="btn btn-danger" href="/setups/{{ setup.id }}/arquivar">🗑️ Arquivar</a>
@@ -61,6 +62,8 @@
         <th>Máquina</th>
         <th>Status</th>
         <th>Resumo</th>
+        <th>Exit</th>
+        <th>Log</th>
         <th>Quando</th>
         <th>Por</th>
       </tr>
@@ -75,6 +78,8 @@
         </td>
         <td><span class="pill pill-{{ e.status }}">{{ exec_status_label.get(e.status, e.status) }}</span></td>
         <td>{% if e.resumo %}{{ e.resumo }}{% else %}<span class="nao-informado">sem resumo</span>{% endif %}</td>
+        <td>{% if e.exit_code is not none %}<code>{{ e.exit_code }}</code>{% else %}—{% endif %}</td>
+        <td>{% if e.log %}<details><summary>ver log</summary><pre class="log">{{ e.log }}</pre></details>{% else %}—{% endif %}</td>
         <td>{{ e.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
         <td>{{ e.created_by or "—" }}</td>
       </tr>

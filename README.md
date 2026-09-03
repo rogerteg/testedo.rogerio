@@ -88,6 +88,24 @@ O Automatic1 registra **onde** cada setup é provisionado:
 
 Documentação do fluxo: `specs/003-machines-runs/`.
 
+## Provisionador real — feature 004
+
+O Automatic1 **executa de fato** um setup numa máquina alvo (Debian + Docker Swarm), dirigido pelo catálogo:
+
+- Do detalhe do setup, "**⚡ Provisionar**" (ou por `GET/POST /setups/{id}/provisionar`) confirma e executa o
+  **asset/script referenciado por `origem_asset`** (`.sh`) de forma idempotente. Registra a `Execution`
+  (feature `003`) com status real, `exit_code`, **log** e horários; falhas e guardas ficam claras no log.
+- **Guardas** (sem efeito colateral): setup arquivado, máquina inativa, origem não executável, par já em
+  andamento e credencial ausente são bloqueados com mensagem acionável. Hash divergente (quando registrado)
+  **bloqueia antes de executar**; sem hash → aviso de integridade não verificada.
+- **Segurança**: credenciais **nunca** no banco/UI — via ambiente (`AUTOMATIC1_SSH_USER`,
+  `AUTOMATIC1_SSH_KEY`, opcional `AUTOMATIC1_SSH_PASSPHRASE`/`AUTOMATIC1_SSH_TIMEOUT`); logs são
+  **sanitizados** (segredos redigidos). O transporte usa `paramiko`.
+- **Runner plugável**: `AUTOMATIC1_RUNNER=fake` usa um executor simulado (demo/testes, sem rede); o padrão é
+  SSH com chave configurada. Testes em `tests/test_provisioner.py` usam apenas o fake.
+
+Documentação do fluxo: `specs/004-provisioner/`.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) roda em push/PR: `uv sync --frozen` → `ruff check`
