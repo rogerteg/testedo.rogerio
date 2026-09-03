@@ -33,6 +33,15 @@ CAMPOS_TEXTO = (
     "resultado_ultima_execucao",
 )
 
+# Limite máximo de caracteres dos campos opcionais (models.py / data-model.md) — T041.
+LIMITES_OPCIONAIS = {
+    "descricao": 2000,
+    "versao": 64,
+    "hash": 256,
+    "licenca": 500,
+    "resultado_ultima_execucao": 1000,
+}
+
 _SINAIS_SEGREDO = (
     "senha",
     "password",
@@ -83,12 +92,29 @@ def validar_campos(dados: dict) -> dict:
         erros["origem_asset"] = "A origem do asset deve ter no máximo 500 caracteres."
 
     versao = (dados.get("versao") or "").strip()
-    if versao and not SEMVER_RE.match(versao):
-        erros["versao"] = "Versão inválida. Use o formato SemVer (ex.: 1.2.3 ou 1.2.3-rc.1)."
+    if versao:
+        if len(versao) > 64:
+            erros["versao"] = "A versão deve ter no máximo 64 caracteres."
+        elif not SEMVER_RE.match(versao):
+            erros["versao"] = "Versão inválida. Use o formato SemVer (ex.: 1.2.3 ou 1.2.3-rc.1)."
 
     status = (dados.get("status") or "rascunho").strip()
     if status not in STATUS_VALIDOS:
         erros["status"] = "Status inválido."
+
+    # Limites máximos dos campos opcionais de texto livre (T041 / models.py).
+    rotulos = {
+        "descricao": "A descrição",
+        "hash": "O hash",
+        "licenca": "A licença",
+        "resultado_ultima_execucao": "O resultado da última execução",
+    }
+    for campo, limite in LIMITES_OPCIONAIS.items():
+        if campo == "versao":
+            continue  # versao já validada acima (limite + SemVer)
+        valor = (dados.get(campo) or "").strip()
+        if len(valor) > limite:
+            erros[campo] = f"{rotulos[campo]} deve ter no máximo {limite} caracteres."
 
     for campo in CAMPOS_TEXTO:
         valor = dados.get(campo)
