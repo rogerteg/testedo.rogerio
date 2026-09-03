@@ -4,6 +4,7 @@ A app usa SQLite em arquivo (config default); nos testes sobrescrevemos a
 dependência de sessão para um banco em memória (StaticPool), garantindo
 isolamento por teste e nenhum efeito colateral em data/setups.db.
 """
+import os
 from datetime import UTC, datetime
 
 import pytest
@@ -14,6 +15,14 @@ from sqlmodel.pool import StaticPool
 from app.database import get_session
 from app.main import app
 from app.models import EnvironmentSetup
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _ambiente_autenticacao():
+    """Garante credenciais de ambiente para os testes (nunca aceitar vazio)."""
+    os.environ.setdefault("AUTOMATIC1_ADMIN_PASSWORD", "automatic1-teste")
+    os.environ.setdefault("AUTOMATIC1_SESSION_SECRET", "segredo-de-teste")
+    os.environ.setdefault("AUTOMATIC1_API_TOKEN", "token-de-teste")
 
 
 @pytest.fixture()
@@ -35,6 +44,8 @@ def client(db_engine):
 
     app.dependency_overrides[get_session] = _override_get_session
     with TestClient(app) as c:
+        # Feature 006: client autenticado por padrão (login via cookie).
+        c.post("/login", data={"senha": os.environ.get("AUTOMATIC1_ADMIN_PASSWORD", "")})
         yield c
     app.dependency_overrides.clear()
 

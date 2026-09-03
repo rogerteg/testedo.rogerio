@@ -42,15 +42,19 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 | Variável | Default | Descrição |
 |----------|---------|-----------|
 | `DB_PATH` | `data/setups.db` | Caminho do banco SQLite |
-| `OPERATOR_NAME` | `admin` | Autor registrado na auditoria (sem auth no v1) |
+| `OPERATOR_NAME` | `admin` | Autor registrado na auditoria |
 | `APP_VERSION` | `0.1.0` | Versão exibida (SemVer) |
+| `AUTOMATIC1_ADMIN_PASSWORD` | — | Senha do operador (login web; feature 006) |
+| `AUTOMATIC1_SESSION_SECRET` | — | Segredo p/ assinar o cookie de sessão |
+| `AUTOMATIC1_SESSION_TTL` | `28800` | Expiração da sessão (segundos) |
+| `AUTOMATIC1_API_TOKEN` | — | Token da API REST (somente leitura) |
 
 ## Regras de negócio (resumo)
 
 - **Nome único** (ignora caixa/espaços), **plataforma alvo** e **origem do asset** obrigatórios.
 - **Versão** opcional validada como **SemVer**.
 - **Sem segredos/credenciais** nos dados (apenas referências/placeholders).
-- Auditoria de **autor + data** em criação (sem auth no v1 → `OPERATOR_NAME`).
+- Auditoria de **autor + data** em criação (`OPERATOR_NAME`).
 
 ## Catálogo padrão (stack de referência) — feature 002
 
@@ -123,6 +127,19 @@ Instalador **cliente** para VPS Debian 11/12 (código shell em `installer/`), es
   não executa Docker/Swarm. Exceção de runtime registrada: PowerShell → bash/Debian.
 
 Documentação do fluxo: `specs/005-installer/`.
+
+## Autenticação e API REST — feature 006
+
+O Admin agora exige **autenticação** (sessão + senha única via `AUTOMATIC1_ADMIN_PASSWORD`, cookie
+assinado com expiração em `AUTOMATIC1_SESSION_SECRET`/`SESSION_TTL`):
+
+- `/login` (público) valida a senha; `/logout` encerra a sessão; demais rotas web exigem sessão
+  (redirecionam a `/login` preservando o destino). Sem credenciais configuradas → acesso bloqueado.
+- **API REST (somente leitura)**: `GET /api/setups`, `/api/maquinas`, `/api/execucoes` — autenticadas por
+  `Authorization: Bearer <AUTOMATIC1_API_TOKEN>`; respostas JSON sem segredos.
+- A autoria das operações continua registrando `OPERATOR_NAME`.
+
+Documentação do fluxo: `specs/006-auth-api/`.
 
 ## CI
 

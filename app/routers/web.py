@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
+from ..auth import COOKIE_SESSAO, criar_sessao, esta_configurado, senha_valida
 from ..catalogo_padrao import carregar_catalogo_padrao
 from ..config import settings
 from ..database import get_session
@@ -61,6 +62,84 @@ STATUS_OPCOES = [
 @router.get("/healthz", response_class=HTMLResponse)
 def healthz() -> HTMLResponse:
     return HTMLResponse("ok")
+
+
+# ---------------------------------------------------------------------------
+# Feature 006 — Autenticação (login/logout) — rotas públicas (middleware)
+# ---------------------------------------------------------------------------
+
+def _sanitizar_next(next_url: str) -> str:
+    """Só permite redirecionamento interno (caminho único) — evita open redirect."""
+    if next_url.startswith("/") and not next_url.startswith("//"):
+        return next_url
+    return "/setups"
+
+
+@router.get("/login")
+def login_form(
+    request: Request,
+    next: Annotated[str, Query()] = "",
+) -> HTMLResponse:
+    destino = _sanitizar_next(next)
+    mensagem = None
+    if not esta_configurado():
+        mensagem = {
+            "tipo": "error",
+            "texto": "Autenticação não configurada. Defina AUTOMATIC1_ADMIN_PASSWORD "
+            "e AUTOMATIC1_SESSION_SECRET no ambiente (FR-007).",
+        }
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {"title": "Login", "next": destino, "mensagem": mensagem},
+    )
+
+
+@router.post("/login")
+def login_post(
+    request: Request,
+    senha: Annotated[str, Form()] = "",
+    next: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    destino = _sanitizar_next(next or "/setups")
+    if not esta_configurado():
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {
+                "title": "Login",
+                "next": destino,
+                "mensagem": {
+                    "tipo": "error",
+                    "texto": "Autenticação não configurada. Defina AUTOMATIC1_ADMIN_PASSWORD "
+                    "e AUTOMATIC1_SESSION_SECRET no ambiente (FR-007).",
+                },
+            },
+        )
+
+    if senha_valida(senha):
+        resposta = RedirectResponse(url=destino, status_code=303)
+        resposta.set_cookie(COOKIE_SESSAO, criar_sessao(), httponly=True, samesite="lax")
+        logger.info("Login bem-sucedido do operador configurado")
+        return resposta
+
+    logger.warning("Tentativa de login com senha inválida")
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {
+            "title": "Login",
+            "next": destino,
+            "mensagem": {"tipo": "error", "texto": "Senha incorreta. Tente novamente."},
+        },
+    )
+
+
+@router.get("/logout")
+def logout() -> HTMLResponse:
+    resposta = RedirectResponse(url="/login", status_code=303)
+    resposta.delete_cookie(COOKIE_SESSAO)
+    return resposta
 
 
 def _dados_vazios() -> dict:

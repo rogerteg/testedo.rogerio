@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · Automatic1 Admin</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <main class="container" style="max-width: 420px;">
+    <div class="page-head">
+      <div>
+        <h1>Automatic1 Admin</h1>
+        <div class="sub">Acesso restrito — autentique-se para continuar.</div>
+      </div>
+    </div>
+
+    {% if mensagem %}
+      <div class="alert alert-{{ mensagem.tipo }}">{{ mensagem.texto }}</div>
+    {% endif %}
+
+    <div class="form-card">
+      <form method="post" action="/login">
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="field">
+          <label for="senha">Senha <span class="req">*</span></label>
+          <input type="password" id="senha" name="senha" required autofocus>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Entrar</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>
