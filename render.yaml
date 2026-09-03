@@ -1,0 +1,32 @@
+# Render Blueprint — Automatic1 Admin
+# Uso: no Render, "New +" → "Blueprint" → apontar para este repositório.
+#
+# NOTA IMPORTANTE sobre persistência:
+#  - O app usa SQLite (DB_PATH=/data/setups.db) e o disco é montado em /data.
+#  - Discos persistentes do Render exigem instância PAGA (não funciona no plano free).
+#    Se o plano for free, remova o bloco "disk" e aceite que os dados resetam a cada deploy.
+#
+# Health check: o serviço expõe GET /healthz (retorna 200). Configure no painel se desejar.
+
+services:
+  - type: web
+    name: automatic1-admin
+    runtime: python
+    plan: starter # pago — necessário para o disco persistente (SQLite)
+    buildCommand: |
+      set -e
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      export PATH="$HOME/.local/bin:$PATH"
+      uv sync --frozen
+    startCommand: |
+      export PATH="$HOME/.local/bin:$PATH"
+      uv run uvicorn app.main:app --host 0.0.0.0 --port "$PORT"
+    envVars:
+      - key: DB_PATH
+        value: /data/setups.db
+      - key: OPERATOR_NAME
+        value: admin
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
