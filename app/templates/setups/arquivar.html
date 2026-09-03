@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Arquivar "{{ setup.nome }}"</h1>
+    <div class="sub">Arquivamento é uma exclusão reversível: o registro sai da listagem ativa, mas permanece recuperável e auditável (FR-010).</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <form method="post" action="/setups/{{ setup.id }}/arquivar">
+    <label class="field" style="display:flex; gap:.5rem; align-items:center; font-weight:600;">
+      <input type="checkbox" name="confirmacao" value="sim" required>
+      Confirmo que desejo arquivar este setup.
+    </label>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-danger">Confirmar arquivamento</button>
+      <a class="btn" href="/setups/{{ setup.id }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

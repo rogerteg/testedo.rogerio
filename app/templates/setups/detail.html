@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ setup.nome }} <span class="pill pill-{{ setup.status }}">{{ status_label.get(setup.status, setup.status) }}</span></h1>
+    <div class="sub">Detalhes do setup de ambiente.</div>
+  </div>
+  <div class="nav">
+    <a class="btn" href="/setups">← Listagem</a>
+    <a class="btn" href="/setups/{{ setup.id }}/editar">✏️ Editar</a>
+    {% if setup.status != "arquivado" %}
+    <a class="btn btn-danger" href="/setups/{{ setup.id }}/arquivar">🗑️ Arquivar</a>
+    {% endif %}
+  </div>
+</div>
+
+<dl class="detail-grid">
+  <dt>Nome</dt><dd>{{ setup.nome }}</dd>
+  <dt>Plataforma alvo</dt><dd>{{ setup.plataforma_alvo }}</dd>
+  <dt>Status</dt><dd>{{ status_label.get(setup.status, setup.status) }}</dd>
+  <dt>Versão</dt><dd>{% if setup.versao %}{{ setup.versao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Origem do asset</dt><dd>{{ setup.origem_asset }}</dd>
+  <dt>Hash / checksum</dt><dd>{% if setup.hash %}<code>{{ setup.hash }}</code>{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Licença / compliance</dt><dd>{% if setup.licenca %}{{ setup.licenca }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Descrição</dt><dd>{% if setup.descricao %}{{ setup.descricao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Resultado última execução</dt><dd>{% if setup.resultado_ultima_execucao %}{{ setup.resultado_ultima_execucao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Criado</dt>
+  <dd>
+    {{ setup.created_at.strftime("%d/%m/%Y %H:%M") }}
+    {% if setup.created_by %} por {{ setup.created_by }}{% endif %}
+  </dd>
+  <dt>Atualizado</dt>
+  <dd>
+    {{ setup.updated_at.strftime("%d/%m/%Y %H:%M") }}
+    {% if setup.updated_by %} por {{ setup.updated_by }}{% endif %}
+  </dd>
+</dl>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="sub">Catálogo dos setups que o Automatic1 pode provisionar.</div>
+  </div>
+  <a class="btn btn-primary" href="/setups/novo">+ Novo setup</a>
+</div>
+
+<form class="search" method="get" action="/setups">
+  <input type="search" name="q" value="{{ termo }}" placeholder="Buscar por nome ou plataforma..." aria-label="Buscar">
+  <button type="submit" class="btn">Buscar</button>
+  {% if termo %}<a class="btn" href="/setups">Limpar</a>{% endif %}
+</form>
+
+<div class="card">
+  {% if setups %}
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Plataforma</th>
+        <th>Status</th>
+        <th>Atualizado em</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in setups %}
+      <tr>
+        <td><a href="/setups/{{ s.id }}">{{ s.nome }}</a></td>
+        <td>{{ s.plataforma_alvo }}</td>
+        <td><span class="pill pill-{{ s.status }}">{{ status_label.get(s.status, s.status) }}</span></td>
+        <td>{{ s.updated_at.strftime("%d/%m/%Y %H:%M") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% elif termo %}
+  <div class="empty">
+    <div class="big">🔍</div>
+    <p><strong>Nada encontrado</strong> para "{{ termo }}".</p>
+    <p>Tente ajustar o filtro ou <a href="/setups/novo">cadastre um novo setup</a>.</p>
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="big">📦</div>
+    <p><strong>Nenhum setup cadastrado ainda.</strong></p>
+    <p>Comece criando o primeiro setup do catálogo.</p>
+    <p><a class="btn btn-primary" href="/setups/novo">+ Novo setup</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

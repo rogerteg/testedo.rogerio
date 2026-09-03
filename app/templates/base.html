@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Automatic1 Admin{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/setups">Automatic1 <span>Admin</span></a>
+    <nav class="nav">
+      <a href="/setups">Setups</a>
+      <a class="btn btn-primary btn-sm" href="/setups/novo">+ Novo setup</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% if mensagem %}
+      <div class="alert alert-{{ mensagem.tipo }}">{{ mensagem.texto }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

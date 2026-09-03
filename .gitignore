@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# Dados locais (SQLite) — não versionar bancos
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Universais
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
