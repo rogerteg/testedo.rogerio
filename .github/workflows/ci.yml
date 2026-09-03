@@ -1,0 +1,35 @@
+# CI — Automatic1 Admin (T040)
+# Roda em push (main) e pull requests: instala deps via uv, lint (ruff) e testes (pytest).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Lint + Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies (uv sync)
+        run: uv sync --frozen
+
+      - name: Lint (ruff)
+        run: uv run ruff check app tests scripts
+
+      - name: Test (pytest)
+        run: uv run pytest

@@ -4,7 +4,7 @@ A app usa SQLite em arquivo (config default); nos testes sobrescrevemos a
 dependência de sessão para um banco em memória (StaticPool), garantindo
 isolamento por teste e nenhum efeito colateral em data/setups.db.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -51,7 +51,7 @@ def criar_setup(db_engine):
             "status": "ativo",
         }
         dados.update(campos)
-        dados.setdefault("updated_at", datetime.now(timezone.utc))
+        dados.setdefault("updated_at", datetime.now(UTC))
         with Session(db_engine) as session:
             obj = EnvironmentSetup(**dados)
             session.add(obj)

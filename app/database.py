@@ -1,5 +1,5 @@
 """Engine/sessão SQLite e inicialização idempotente do schema."""
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 
 from .config import settings
 

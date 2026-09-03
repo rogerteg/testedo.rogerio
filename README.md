@@ -52,6 +52,24 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 Documentação do fluxo: `specs/001-environment-crud/` (`spec.md`, `plan.md`, `research.md`,
 `data-model.md`, `contracts/web.md`, `quickstart.md`, `tasks.md`).
 
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) roda em push/PR: `uv sync --frozen` → `ruff check`
+→ `pytest`.
+
+## Deploy (Render)
+
+O repositório contém um **`render.yaml`** (Blueprint) que cria o web service `automatic1-admin`:
+
+- **Build**: instala `uv` e roda `uv sync --frozen`.
+- **Start**: `uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+- **Persistência**: `DB_PATH=/data/setups.db` + **disco persistente** montado em `/data`
+  (schema criado automaticamente no startup via `init_db`).
+
+Passos: **dashboard.render.com → New → Blueprint** → apontar para este repositório.
+> ⚠️ **Disco persistente exige plano pago** (não funciona no free). Para testar grátis sem
+> persistência, remova o bloco `disk` do `render.yaml` (os dados resetam a cada deploy).
+
 ## Solução de problemas
 
 - **`uv` não encontrado**: instale em https://docs.astral.sh/uv/ e reabra o terminal.

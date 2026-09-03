@@ -2,7 +2,7 @@
 
 Test-First: DEVEM falhar (red) antes da implementação e passar após ela.
 """
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.models import EnvironmentSetup
 
@@ -39,7 +39,7 @@ def test_editar_setup(client, db_engine, criar_setup):
 
 
 def test_editar_renomear_duplicado_bloqueado(client, db_engine, criar_setup):
-    a = criar_setup(nome="Nome Existente", plataforma_alvo="Windows", origem_asset=BASE)
+    criar_setup(nome="Nome Existente", plataforma_alvo="Windows", origem_asset=BASE)
     b = criar_setup(nome="Outro", plataforma_alvo="Linux", origem_asset=BASE)
 
     resp = client.post(f"/setups/{b.id}/editar", data=_dados(nome="nome existente"))

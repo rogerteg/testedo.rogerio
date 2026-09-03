@@ -4,9 +4,9 @@ Fase atual (v1): US1 (cadastrar) e US2 (listar) — P1.
 Slices futuras (US3-US5) adicionam detalhe/edição/arquivamento aqui.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -53,7 +53,7 @@ def _dados_vazios() -> dict:
     return {campo: "" for campo in CAMPOS}
 
 
-def _existe_nome_duplicado(session: Session, nome: str, excluir_id: Optional[int] = None) -> bool:
+def _existe_nome_duplicado(session: Session, nome: str, excluir_id: int | None = None) -> bool:
     """Verifica unicidade de nome (case/whitespace-insensitive — FR-002)."""
     alvo = normalizar_nome(nome)
     registros = session.exec(select(EnvironmentSetup)).all()
@@ -74,7 +74,7 @@ def _obter_setup(session: Session, setup_id: int) -> EnvironmentSetup:
 
 
 def _agora() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # ---------------------------------------------------------------------------

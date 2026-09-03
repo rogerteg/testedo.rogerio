@@ -3,7 +3,7 @@
 Test-First (constituição III): estes testes DEVEM falhar (red) antes da
 implementação do core da US2 e passar (green) após ela.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 BASE = "https://github.com/exemplo/setup"
 
@@ -24,13 +24,13 @@ def test_ordena_mais_recente_primeiro(client, criar_setup):
         nome="Mais Antigo",
         plataforma_alvo="Linux",
         origem_asset=BASE,
-        updated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     criar_setup(
         nome="Mais Novo",
         plataforma_alvo="Windows",
         origem_asset=BASE,
-        updated_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 2, 1, tzinfo=UTC),
     )
 
     resp = client.get("/setups")
