@@ -106,6 +106,24 @@ O Automatic1 **executa de fato** um setup numa máquina alvo (Debian + Docker Sw
 
 Documentação do fluxo: `specs/004-provisioner/`.
 
+## Instalador próprio do Automatic1 — feature 005
+
+Instalador **cliente** para VPS Debian 11/12 (código shell em `installer/`), estilo auto-instalador dirigido pelo catálogo:
+
+- `installer/install.sh` (entrada headless: `--check`/`--version`/`--help`/execução), `lib/common.sh` (helpers +
+  idempotência por marcadores + manifesto), `bootstrap.sh` (Docker + Docker Swarm) e `apps/<ferramenta>.sh`
+  (instaladores por aplicação — referência: `apps/n8n.sh`). Configuração por variáveis `AUTOMATIC1_*`
+  (`config.example.env`); **sem segredos embutidos**; saída com exit codes padronizados e **manifesto**
+  (`serviço | versão | url`).
+- **Adoção incremental**: o v1 cobre o framework + app de referência. Novas ferramentas seguem o padrão
+  (`installer/apps/README.md`); quando os scripts estiverem hospedados, o catálogo (`002`) passa a referenciá-los
+  como `origem_asset` (destravando o provisionador `004`).
+- **Validação**: estrutura/anti-segredo em `tests/test_installer.py` (+ `bash -n` quando o bash é utilizável).
+  A **validação E2E real (bootstrap/apps num Debian) é manual** em host de teste — este ambiente (Windows/CI)
+  não executa Docker/Swarm. Exceção de runtime registrada: PowerShell → bash/Debian.
+
+Documentação do fluxo: `specs/005-installer/`.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) roda em push/PR: `uv sync --frozen` → `ruff check`
