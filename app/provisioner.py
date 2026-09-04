@@ -14,10 +14,9 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Session, select
 
-from .models import Execution
+from .models import EnvironmentSetup, Execution, TargetHost
 
 if TYPE_CHECKING:  # evita import circular pesado p/ type-check
-    from .models import EnvironmentSetup, TargetHost
     from .runners import Runner
 
 logger = logging.getLogger("automatic1_admin.provisioner")
@@ -97,14 +96,13 @@ def _primeira_linha(texto: str, limite: int = 1000) -> str:
     return linha[:limite]
 
 
-def provisionar(
+def iniciar_execucao(
     session: Session,
-    runner: "Runner",
     setup: "EnvironmentSetup",
     host: "TargetHost",
     autor: str,
 ) -> Execution:
-    """Executa um setup numa máquina alvo e grava a `Execution` real (feature 004).
+    """Valida guardas e cria a `Execution` em `em_andamento` (feature 004/008).
 
     Guardas violadas levantam ``ProvisionamentoError`` **sem criar** `Execution`.
     """
@@ -123,9 +121,6 @@ def provisionar(
             "Já existe uma execução em andamento para este setup nesta máquina. Aguarde concluir."
         )
 
-    timeout = int(os.getenv("AUTOMATIC1_SSH_TIMEOUT", "300"))
-    comando = montar_comando(setup)
-
     execucao = Execution(
         setup_id=setup.id,
         target_host_id=host.id,
@@ -136,11 +131,39 @@ def provisionar(
     session.add(execucao)
     session.commit()
     session.refresh(execucao)
+    logger.info("Execução iniciada id=%s setup=%s host=%s por %s", execucao.id, setup.id, host.id, autor)
+    return execucao
+
+
+def concluir_execucao(session: Session, runner: "Runner", execucao_id: int) -> Execution:
+    """Executa (runner) uma `Execution` em andamento e a conclui (feature 004/008).
+
+    Usado pelo worker assíncrono (008) e pelo fluxo síncrono (`provisionar`).
+    """
+    execucao = session.get(Execution, execucao_id)
+    if execucao is None or execucao.status != "em_andamento":
+        raise ProvisionamentoError("Execução não encontrada ou já concluída.")
+
+    setup = session.get(EnvironmentSetup, execucao.setup_id)
+    host = session.get(TargetHost, execucao.target_host_id)
+    if setup is None or host is None:
+        saida = "ERRO: setup ou máquina não encontrados ao concluir a execução."
+        execucao.status = "erro"
+        execucao.exit_code = None
+        execucao.log = saida
+        execucao.resumo = _primeira_linha(saida)
+        execucao.finished_at = _agora()
+        session.add(execucao)
+        session.commit()
+        return execucao
+
+    timeout = int(os.getenv("AUTOMATIC1_SSH_TIMEOUT", "300"))
+    comando = montar_comando(setup)
 
     try:
         resultado = runner.executar(comando=comando, host=host.identificacao, timeout=timeout)
     except Exception as exc:
-        logger.exception("Falha de transporte ao provisionar setup=%s host=%s", setup.id, host.id)
+        logger.exception("Falha de transporte ao concluir execução=%s", execucao.id)
         saida = redigir(f"ERRO no transporte SSH: {exc}", _segredos_do_ambiente())
         execucao.status = "erro"
         execucao.exit_code = None
@@ -160,14 +183,24 @@ def provisionar(
     session.add(execucao)
     session.commit()
     logger.info(
-        "Provisionamento concluído setup=%s host=%s status=%s exit=%s por %s",
-        setup.id,
-        host.id,
+        "Provisionamento concluído execução=%s status=%s exit=%s",
+        execucao.id,
         execucao.status,
         execucao.exit_code,
-        autor,
     )
     return execucao
+
+
+def provisionar(
+    session: Session,
+    runner: "Runner",
+    setup: "EnvironmentSetup",
+    host: "TargetHost",
+    autor: str,
+) -> Execution:
+    """Fluxo síncrono (compatível com a feature 004): inicia e conclui no mesmo request."""
+    execucao = iniciar_execucao(session, setup, host, autor)
+    return concluir_execucao(session, runner, execucao.id)
 
 
 def avaliar(setup: "EnvironmentSetup", host: "TargetHost | None", runner: "Runner | None") -> dict:

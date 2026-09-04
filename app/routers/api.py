@@ -264,3 +264,23 @@ def registrar_execucao_api(
     session.commit()
     session.refresh(execucao)
     return JSONResponse(status_code=201, content=_execucao_para_json(execucao))
+
+
+def _execucao_detalhe_json(e: Execution) -> dict:
+    dados = _execucao_para_json(e)
+    dados["log"] = e.log
+    dados["iniciado_em"] = _dt(e.started_at)
+    dados["finalizado_em"] = _dt(e.finished_at)
+    return dados
+
+
+@router.get("/execucoes/{execucao_id}", dependencies=[Depends(exigir_token)])
+def api_execucao_detalhe(
+    execucao_id: int,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Detalhe de uma execução (inclusive log sanitizado) — p/ polling (feature 008)."""
+    execucao = session.get(Execution, execucao_id)
+    if execucao is None:
+        raise HTTPException(status_code=404, detail={"erros": {"execucao_id": "Execução não encontrada."}})
+    return _execucao_detalhe_json(execucao)

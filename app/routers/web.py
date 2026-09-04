@@ -27,7 +27,12 @@ from ..catalogo_padrao import carregar_catalogo_padrao
 from ..config import settings
 from ..database import get_session
 from ..models import PLATAFORMA_PADRAO, EnvironmentSetup, Execution, TargetHost
-from ..provisioner import ProvisionamentoError, avaliar, provisionar
+from ..provisioner import (
+    ProvisionamentoError,
+    avaliar,
+    concluir_execucao,
+    iniciar_execucao,
+)
 from ..runners import criar_runner
 from ..schemas import (
     CATEGORIA_LABEL,
@@ -41,6 +46,7 @@ from ..schemas import (
     validar_execucao,
     validar_maquina,
 )
+from ..worker import enfileirar, provisionamento_assincrono
 
 router = APIRouter()
 templates = Jinja2Templates(
@@ -415,11 +421,17 @@ def detalhe_setup(
             "tipo": "success",
             "texto": "Provisionamento executado — confira o status e o log no histórico.",
         }
+    elif sucesso == "execucao_iniciada":
+        mensagem = {
+            "tipo": "success",
+            "texto": "Provisionamento iniciado em segundo plano — a página atualiza automaticamente até concluir.",
+        }
 
     # Feature 003 — histórico de execuções do setup + última execução derivada (Q3=A).
     execucoes = _execucoes(session, setup_id=setup_id)
     ultima_execucao = execucoes[0] if execucoes else None
     hosts = _hosts_por_id(session) if execucoes else {}
+    execucao_em_andamento = any(e.status == "em_andamento" for e in execucoes)
 
     return templates.TemplateResponse(
         request,
@@ -431,6 +443,7 @@ def detalhe_setup(
             "categoria_rotulo": rotulo_categoria(setup.categoria),
             "execucoes": execucoes,
             "ultima_execucao": ultima_execucao,
+            "execucao_em_andamento": execucao_em_andamento,
             "exec_status_label": EXEC_STATUS_LABEL,
             "hosts": hosts,
             "mensagem": mensagem,
@@ -1066,7 +1079,7 @@ def executar_provisionamento(
         )
 
     try:
-        provisionar(session, runner, setup, host, autor=settings.operator_name)
+        execucao = iniciar_execucao(session, setup, host, autor=settings.operator_name)
     except ProvisionamentoError as exc:
         return _render_provisionar(
             request,
@@ -1079,4 +1092,10 @@ def executar_provisionamento(
             mensagem={"tipo": "error", "texto": "Provisionamento bloqueado."},
         )
 
+    if provisionamento_assincrono():
+        # Feature 008 — execução em segundo plano: disparo retorna imediato.
+        enfileirar(execucao.id)
+        return RedirectResponse(url=f"/setups/{setup.id}?sucesso=execucao_iniciada", status_code=303)
+
+    concluir_execucao(session, runner, execucao.id)
     return RedirectResponse(url=f"/setups/{setup.id}?sucesso=execucao_provisionada", status_code=303)

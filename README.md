@@ -52,6 +52,8 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 | `AUTOMATIC1_COOKIE_SECURE` | `0` | `1` = cookie de sessão com flag `Secure` (HTTPS) |
 | `AUTOMATIC1_LOGIN_MAX_TENTATIVAS` | `10` | Limite de tentativas de login por origem antes do bloqueio |
 | `AUTOMATIC1_LOGIN_LOCKOUT_SEG` | `60` | Janela (s) do bloqueio de login |
+| `AUTOMATIC1_ASYNC` | `1` | `1` = provisionamento em segundo plano (worker); `0` = síncrono |
+| `AUTOMATIC1_WORKERS` | `2` | Threads do worker de execução assíncrona |
 
 ## Regras de negócio (resumo)
 
@@ -113,6 +115,11 @@ O Automatic1 **executa de fato** um setup numa máquina alvo (Debian + Docker Sw
   SSH com chave configurada. Testes em `tests/test_provisioner.py` usam apenas o fake.
 
 Documentação do fluxo: `specs/004-provisioner/`.
+
+> ⚙️ **Execução assíncrona (feature 008)**: o provisionamento roda em **segundo plano** (worker em processo,
+> `AUTOMATIC1_ASYNC=1`); o disparo retorna imediato e a página do setup atualiza automaticamente até concluir.
+> Execuções órfãs (`em_andamento`) são recuperadas como interrompidas no startup. Documentação:
+> `specs/008-async-provisioning/`.
 
 ## Instalador próprio do Automatic1 — feature 005
 

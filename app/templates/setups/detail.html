@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+{% block head_extra %}{% if execucao_em_andamento %}<meta http-equiv="refresh" content="3">{% endif %}{% endblock %}
 
 {% block content %}
 <div class="page-head">

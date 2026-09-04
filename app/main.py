@@ -24,6 +24,10 @@ logger = logging.getLogger("automatic1_admin")
 async def lifespan(_app: FastAPI):
     init_db()
     logger.info("Banco inicializado em %s", settings.db_path)
+    # Feature 008 — recupera execuções órfãs (em_andamento sem worker) no startup.
+    from .worker import recuperar_orfas
+
+    recuperar_orfas()
     yield
 
 
