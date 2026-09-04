@@ -23,6 +23,7 @@ def _ambiente_autenticacao():
     os.environ.setdefault("AUTOMATIC1_ADMIN_PASSWORD", "automatic1-teste")
     os.environ.setdefault("AUTOMATIC1_SESSION_SECRET", "segredo-de-teste")
     os.environ.setdefault("AUTOMATIC1_API_TOKEN", "token-de-teste")
+    os.environ.setdefault("AUTOMATIC1_WRITE_API_TOKEN", "token-escrita-teste")
 
 
 @pytest.fixture()

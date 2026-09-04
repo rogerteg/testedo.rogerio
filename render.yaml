@@ -33,6 +33,8 @@ services:
         sync: false
       - key: AUTOMATIC1_API_TOKEN
         sync: false
+      - key: AUTOMATIC1_WRITE_API_TOKEN
+        sync: false
       - key: AUTOMATIC1_COOKIE_SECURE
         value: "1" # HTTPS no Render → cookie com flag Secure
     disk:

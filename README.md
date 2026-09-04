@@ -48,6 +48,7 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 | `AUTOMATIC1_SESSION_SECRET` | — | Segredo p/ assinar o cookie de sessão |
 | `AUTOMATIC1_SESSION_TTL` | `28800` | Expiração da sessão (segundos) |
 | `AUTOMATIC1_API_TOKEN` | — | Token da API REST (somente leitura) |
+| `AUTOMATIC1_WRITE_API_TOKEN` | — | Token da API REST de **escrita** (feature 007) |
 | `AUTOMATIC1_COOKIE_SECURE` | `0` | `1` = cookie de sessão com flag `Secure` (HTTPS) |
 | `AUTOMATIC1_LOGIN_MAX_TENTATIVAS` | `10` | Limite de tentativas de login por origem antes do bloqueio |
 | `AUTOMATIC1_LOGIN_LOCKOUT_SEG` | `60` | Janela (s) do bloqueio de login |
@@ -140,6 +141,8 @@ assinado com expiração em `AUTOMATIC1_SESSION_SECRET`/`SESSION_TTL`):
   (redirecionam a `/login` preservando o destino). Sem credenciais configuradas → acesso bloqueado.
 - **API REST (somente leitura)**: `GET /api/setups`, `/api/maquinas`, `/api/execucoes` — autenticadas por
   `Authorization: Bearer <AUTOMATIC1_API_TOKEN>`; respostas JSON sem segredos.
+- **API de escrita (feature 007)**: `POST /api/setups`, `/api/maquinas`, `/api/execucoes` — autenticadas por
+  `Authorization: Bearer <AUTOMATIC1_WRITE_API_TOKEN>` (token separado); erros por campo (`422` validação / `409` duplicado / `404` / `400`).
 - A autoria das operações continua registrando `OPERATOR_NAME`.
 
 Documentação do fluxo: `specs/006-auth-api/`.
