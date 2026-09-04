@@ -49,6 +49,8 @@ Test-first (constituição): a suíte cobre os cenários de aceite do v1
 | `AUTOMATIC1_SESSION_TTL` | `28800` | Expiração da sessão (segundos) |
 | `AUTOMATIC1_API_TOKEN` | — | Token da API REST (somente leitura) |
 | `AUTOMATIC1_COOKIE_SECURE` | `0` | `1` = cookie de sessão com flag `Secure` (HTTPS) |
+| `AUTOMATIC1_LOGIN_MAX_TENTATIVAS` | `10` | Limite de tentativas de login por origem antes do bloqueio |
+| `AUTOMATIC1_LOGIN_LOCKOUT_SEG` | `60` | Janela (s) do bloqueio de login |
 
 ## Regras de negócio (resumo)
 

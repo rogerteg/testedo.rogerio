@@ -61,6 +61,21 @@ def test_login_sucesso_concede_acesso(client_anon):
     assert pagina.status_code == 200
 
 
+def test_login_bloqueia_apos_muitas_tentativas(client_anon, monkeypatch):
+    from app.auth import limpar_falhas_login
+
+    monkeypatch.setenv("AUTOMATIC1_LOGIN_MAX_TENTATIVAS", "3")
+    for _ in range(3):
+        client_anon.post("/login", data={"senha": "errada"})
+
+    # Mesmo com a senha correta, o acesso é bloqueado (anti força-bruta).
+    resp = client_anon.post("/login", data={"senha": _senha()}, follow_redirects=False)
+    assert resp.status_code == 200
+    assert "Muitas tentativas" in resp.text
+
+    limpar_falhas_login("testclient")  # limpeza para não afetar outros testes
+
+
 def test_login_next_sanitizado_nao_abre_redirect(client_anon):
     # `next` com prefixo externo (// ou \) deve cair no destino interno padrão.
     for externo in ("//evil.example", "\\evil.example"):

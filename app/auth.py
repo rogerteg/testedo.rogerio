@@ -6,11 +6,59 @@ persistido no banco (constituição IV).
 """
 import hmac
 import os
+import threading
+import time
 
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 COOKIE_SESSAO = "automatic1_session"
 _TTL_PADRAO = 8 * 60 * 60  # 8h
+
+# Limitação de tentativas de login (anti força-bruta — feature 006/C3).
+_MAX_TENTATIVAS_PADRAO = 10
+_LOCKOUT_SEG_PADRAO = 60
+_attempts_store: dict[str, list[float]] = {}
+_attempts_lock = threading.Lock()
+
+
+def _max_tentativas() -> int:
+    try:
+        return int(os.getenv("AUTOMATIC1_LOGIN_MAX_TENTATIVAS", str(_MAX_TENTATIVAS_PADRAO)))
+    except ValueError:
+        return _MAX_TENTATIVAS_PADRAO
+
+
+def _lockout_seg() -> int:
+    try:
+        return int(os.getenv("AUTOMATIC1_LOGIN_LOCKOUT_SEG", str(_LOCKOUT_SEG_PADRAO)))
+    except ValueError:
+        return _LOCKOUT_SEG_PADRAO
+
+
+def _janela_limpa(chave: str) -> list[float]:
+    agora = time.monotonic()
+    lista = _attempts_store.setdefault(chave, [])
+    lista[:] = [t for t in lista if agora - t < _lockout_seg()]
+    return lista
+
+
+def login_bloqueado(chave: str) -> bool:
+    """True se a chave (ex.: IP) atingiu o limite de tentativas na janela."""
+    with _attempts_lock:
+        return len(_janela_limpa(chave)) >= _max_tentativas()
+
+
+def registrar_falha_login(chave: str) -> bool:
+    """Registra uma falha; devolve True se a partir de agora a chave está bloqueada."""
+    with _attempts_lock:
+        lista = _janela_limpa(chave)
+        lista.append(time.monotonic())
+        return len(lista) >= _max_tentativas()
+
+
+def limpar_falhas_login(chave: str) -> None:
+    with _attempts_lock:
+        _attempts_store.pop(chave, None)
 
 
 def _getenv(nome: str) -> str | None:

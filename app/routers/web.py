@@ -18,6 +18,9 @@ from ..auth import (
     cookie_secure,
     criar_sessao,
     esta_configurado,
+    limpar_falhas_login,
+    login_bloqueado,
+    registrar_falha_login,
     senha_valida,
 )
 from ..catalogo_padrao import carregar_catalogo_padrao
@@ -128,7 +131,24 @@ def login_post(
             },
         )
 
+    chave = request.client.host if request.client else "desconhecido"
+    if login_bloqueado(chave):
+        logger.warning("Login bloqueado por muitas tentativas (chave=%s)", chave)
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {
+                "title": "Login",
+                "next": destino,
+                "mensagem": {
+                    "tipo": "error",
+                    "texto": "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.",
+                },
+            },
+        )
+
     if senha_valida(senha):
+        limpar_falhas_login(chave)
         resposta = RedirectResponse(url=destino, status_code=303)
         resposta.set_cookie(
             COOKIE_SESSAO,
@@ -140,7 +160,8 @@ def login_post(
         logger.info("Login bem-sucedido do operador configurado")
         return resposta
 
-    logger.warning("Tentativa de login com senha inválida")
+    registrar_falha_login(chave)
+    logger.warning("Tentativa de login com senha inválida (chave=%s)", chave)
     return templates.TemplateResponse(
         request,
         "login.html",
