@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Backup do catálogo</h1>
+    <div class="sub">Exporte (backup/migração) ou importe um snapshot JSON do catálogo
+      (setups, máquinas e execuções). A importação é <strong>aditiva</strong>: itens com o
+      mesmo nome são ignorados; segredos nunca são aceitos (constituição IV).</div>
+  </div>
+  <div class="nav">
+    <a class="btn" href="/setups">← Setups</a>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+  <h2>Exportar</h2>
+  <p>Baixa um arquivo JSON com o estado atual do catálogo (formato
+    <code>automatic1-catalogo</code>, versão 1).</p>
+  <a class="btn btn-primary" href="/backup/exportar">⬇ Exportar catálogo</a>
+</div>
+
+<div class="card" style="margin-top: 1.25rem;">
+  <h2>Importar</h2>
+  <p>Suba um snapshot JSON exportado. Itens já existentes (mesmo nome) são ignorados;
+    execuções são restauradas quando o par setup × máquina existe.</p>
+  <form method="post" action="/backup/importar" enctype="multipart/form-data">
+    <div class="field">
+      <input type="file" id="arquivo" name="arquivo" accept="application/json,.json" required>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">⬆ Importar backup</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

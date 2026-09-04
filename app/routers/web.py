@@ -8,8 +8,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
@@ -1109,3 +1118,108 @@ def executar_provisionamento(
 
     concluir_execucao(session, runner, execucao.id)
     return RedirectResponse(url=f"/setups/{setup.id}?sucesso=execucao_provisionada", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Feature 010 — Backup/exportação do catálogo (JSON)
+# ---------------------------------------------------------------------------
+
+def _relatorio_backup_mensagem(relatorio: dict) -> str:
+    return (
+        f"Backup importado: {relatorio['criados_setups']} setup(s) criado(s), "
+        f"{relatorio['ignorados_setups']} ignorado(s); "
+        f"{relatorio['criadas_maquinas']} máquina(s) criada(s), "
+        f"{relatorio['ignoradas_maquinas']} ignorada(s); "
+        f"{relatorio['criadas_execucoes']} execução(ões) restaurada(s), "
+        f"{relatorio['ignoradas_execucoes']} ignorada(s)."
+    )
+
+
+@router.get("/backup")
+def backup_page(request: Request, sucesso: str = Query("")) -> HTMLResponse:
+    mensagem = None
+    if sucesso == "importado":
+        mensagem = {"tipo": "success", "texto": "Backup importado com sucesso. Veja o relatório abaixo."}
+    return templates.TemplateResponse(
+        request,
+        "backup.html",
+        {
+            "title": "Backup do catálogo",
+            "mensagem": mensagem,
+        },
+    )
+
+
+@router.get("/backup/exportar")
+def backup_exportar(session: Session = Depends(get_session)) -> HTMLResponse:
+    from ..backup import montar_snapshot, snapshot_para_json
+
+    snapshot = montar_snapshot(session)
+    conteudo = snapshot_para_json(snapshot)
+    nome_arquivo = f"automatic1-catalogo-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}.json"
+    return Response(
+        content=conteudo,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'},
+    )
+
+
+@router.post("/backup/importar")
+def backup_importar(
+    request: Request,
+    session: Session = Depends(get_session),
+    arquivo: Annotated[UploadFile, File()] = None,
+) -> HTMLResponse:
+    import json
+
+    from ..backup import BackupError, importar_snapshot
+
+    if arquivo is None or not arquivo.filename:
+        return templates.TemplateResponse(
+            request,
+            "backup.html",
+            {
+                "title": "Backup do catálogo",
+                "mensagem": {"tipo": "error", "texto": "Selecione um arquivo de backup para importar."},
+            },
+        )
+    try:
+        conteudo = arquivo.file.read().decode("utf-8")
+
+        dados = json.loads(conteudo)
+        relatorio = importar_snapshot(session, dados, autor=settings.operator_name)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        texto = "Arquivo inválido: não é um JSON legível."
+        return templates.TemplateResponse(
+            request,
+            "backup.html",
+            {
+                "title": "Backup do catálogo",
+                "mensagem": {"tipo": "error", "texto": texto},
+            },
+        )
+    except BackupError as exc:
+        return templates.TemplateResponse(
+            request,
+            "backup.html",
+            {
+                "title": "Backup do catálogo",
+                "mensagem": {"tipo": "error", "texto": str(exc)},
+            },
+        )
+    finally:
+        if arquivo is not None:
+            arquivo.file.close()
+
+    invalidos = relatorio["invalidos_setups"] + relatorio["invalidas_maquinas"]
+    texto = _relatorio_backup_mensagem(relatorio)
+    if invalidos:
+        texto += f" {invalidos} item(ns) inválido(s) ignorado(s) por validação/anti-segredo."
+    return templates.TemplateResponse(
+        request,
+        "backup.html",
+        {
+            "title": "Backup do catálogo",
+            "mensagem": {"tipo": "success", "texto": texto},
+        },
+    )

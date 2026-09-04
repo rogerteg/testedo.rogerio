@@ -136,6 +136,22 @@ Cada setup pode carregar **configuração de deploy** (parâmetros não secretos
 
 Documentação do fluxo: `specs/009-deploy-config/`.
 
+## Backup/exportação do catálogo — feature 010
+
+Exporte e restaure o catálogo (setups, máquinas e execuções) em **JSON** — para backup,
+migração ou recuperação:
+
+- **Exportar** (`GET /backup/exportar`, ou nav **Backup**): baixa `automatic1-catalogo-<data>.json`
+  com meta (formato/versão/data/autor) e as três coleções. Execuções levam `setup_nome`/`maquina_nome`
+  (desnormalizados) para permitir restauração mesmo com ids novos.
+- **Importar** (`POST /backup/importar`): restauração **aditiva/não destrutiva** — itens com o mesmo
+  nome são ignorados; execuções são idempotentes (não duplicam) e só entram quando o par
+  setup × máquina existe.
+- **Segurança** (constituição IV): a importação reaplica validações e **anti-segredo** (FR-013);
+  itens inválidos são contabilizados e ignorados — nunca entra segredo no banco.
+
+Documentação do fluxo: `specs/010-backup/`.
+
 ## Instalador próprio do Automatic1 — feature 005
 
 Instalador **cliente** para VPS Debian 11/12 (código shell em `installer/`), estilo auto-instalador dirigido pelo catálogo:
