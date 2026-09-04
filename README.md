@@ -167,6 +167,23 @@ provisionamento — consulta **somente leitura**, sem alterar estado:
 
 Documentação do fluxo: `specs/011-monitor/`.
 
+## Rotina/agendamento (cron) de execuções — feature 012
+
+Agende **execuções recorrentes** (setup × máquina) por expressão **cron** — para
+revalidação/atualização automática além do disparo manual:
+
+- Nav **Agendamentos**: criar, listar, ativar/desativar e excluir agendamentos
+  (`minuto hora dia mês dia-semana`; suporta `*`, `*/passo` e listas `a,b`).
+- **Verificar agora**: dispara os vencidos sob demanda (`POST /agendamentos/verificar`);
+  e uma **rotina interna** (thread daemon, intervalo em `AUTOMATIC1_SCHEDULER_INTERVALO`,
+  desligável com `AUTOMATIC1_SCHEDULER=0`) detecta vencidos periodicamente.
+- **Disparo seguro**: cria `Execution` `em_andamento` reusando as guardas do provisionador
+  (`004` — setup arquivado/máquina inativa/em andamento bloqueiam) e enfileira no **worker
+  assíncrono** (`008`). Máximo 1 disparo por janela (minuto) — sem duplicação em re-tick.
+- **Sem segredos** (constituição IV); parser cron **caseiro** (sem dependência nova).
+
+Documentação do fluxo: `specs/012-scheduler/`.
+
 ## Instalador próprio do Automatic1 — feature 005
 
 Instalador **cliente** para VPS Debian 11/12 (código shell em `installer/`), estilo auto-instalador dirigido pelo catálogo:

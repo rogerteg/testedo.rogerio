@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="sub">Agende execuções recorrentes (cron) de um setup numa máquina ativa.</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <form method="post" action="{{ acao }}">
+    <div class="field">
+      <label for="setup_id">Setup <span class="req">*</span></label>
+      <select id="setup_id" name="setup_id" required>
+        <option value="">— selecione —</option>
+        {% for s in setups %}
+        <option value="{{ s.id }}" {% if dados.setup_id == s.id|string %}selected{% endif %}>{{ s.nome }}</option>
+        {% endfor %}
+      </select>
+      {% if erros.setup_id %}<div class="field-error">{{ erros.setup_id }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="target_host_id">Máquina alvo <span class="req">*</span></label>
+      <select id="target_host_id" name="target_host_id" required>
+        <option value="">— selecione —</option>
+        {% for h in hosts %}
+        <option value="{{ h.id }}" {% if dados.target_host_id == h.id|string %}selected{% endif %}>{{ h.nome }}</option>
+        {% endfor %}
+      </select>
+      {% if erros.target_host_id %}<div class="field-error">{{ erros.target_host_id }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="cron">Expressão cron <span class="req">*</span></label>
+      <input type="text" id="cron" name="cron" value="{{ dados.cron }}" maxlength="100"
+             placeholder="minuto hora dia mês dia-semana — ex.: 0 6 * * *">
+      <div class="hint">5 campos. Suporta <code>*</code>, <code>*/passo</code> (ex.: <code>*/5</code>)
+        e listas (ex.: <code>1,15</code>). Ex.: <code>0 6 * * *</code> = todo dia 06:00.
+        Dia da semana: 0=domingo … 6=sábado.</div>
+      {% if erros.cron %}<div class="field-error">{{ erros.cron }}</div>{% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar agendamento</button>
+      <a class="btn" href="/agendamentos">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

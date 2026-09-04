@@ -35,7 +35,13 @@ from ..auth import (
 from ..catalogo_padrao import carregar_catalogo_padrao
 from ..config import settings
 from ..database import get_session
-from ..models import PLATAFORMA_PADRAO, EnvironmentSetup, Execution, TargetHost
+from ..models import (
+    PLATAFORMA_PADRAO,
+    Agendamento,
+    EnvironmentSetup,
+    Execution,
+    TargetHost,
+)
 from ..provisioner import (
     ProvisionamentoError,
     avaliar,
@@ -1265,3 +1271,206 @@ def backup_importar(
             "mensagem": {"tipo": "success", "texto": texto},
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Feature 012 — Rotina/agendamento (cron) de execuções
+# ---------------------------------------------------------------------------
+
+def _obter_agendamento(session: Session, agendamento_id: int) -> Agendamento:
+    agendamento = session.get(Agendamento, agendamento_id)
+    if agendamento is None:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
+    return agendamento
+
+
+def _setups_ativos(session: Session) -> list[EnvironmentSetup]:
+    return session.exec(
+        select(EnvironmentSetup).where(EnvironmentSetup.status != "arquivado").order_by(EnvironmentSetup.nome)
+    ).all()
+
+
+def _hosts_ativos(session: Session) -> list[TargetHost]:
+    return session.exec(
+        select(TargetHost).where(TargetHost.status == "ativa").order_by(TargetHost.nome)
+    ).all()
+
+
+def _agendamentos(session: Session) -> list[Agendamento]:
+    return session.exec(select(Agendamento).order_by(Agendamento.id.desc())).all()
+
+
+@router.get("/agendamentos")
+def listar_agendamentos(
+    request: Request,
+    session: Session = Depends(get_session),
+    sucesso: str = Query(""),
+) -> HTMLResponse:
+    mensagem = None
+    if sucesso == "agendamento_criado":
+        mensagem = {"tipo": "success", "texto": "Agendamento criado com sucesso."}
+    elif sucesso == "agendamento_desativado":
+        mensagem = {"tipo": "success", "texto": "Agendamento desativado."}
+    elif sucesso == "agendamento_ativado":
+        mensagem = {"tipo": "success", "texto": "Agendamento ativado."}
+    elif sucesso == "agendamento_removido":
+        mensagem = {"tipo": "success", "texto": "Agendamento removido."}
+    elif sucesso == "verificado":
+        mensagem = {"tipo": "success", "texto": "Verificação executada. Veja o relatório no histórico."}
+
+    agendamentos = _agendamentos(session)
+    setups = _setups_por_id(session) if agendamentos else {}
+    hosts = _hosts_por_id(session) if agendamentos else {}
+
+    return templates.TemplateResponse(
+        request,
+        "agendamentos/list.html",
+        {
+            "title": "Agendamentos (rotina)",
+            "agendamentos": agendamentos,
+            "setups": setups,
+            "hosts": hosts,
+            "status_label": STATUS_LABEL,
+            "host_status_label": HOST_STATUS_LABEL,
+            "mensagem": mensagem,
+        },
+    )
+
+
+@router.get("/agendamentos/novo")
+def novo_agendamento(request: Request, session: Session = Depends(get_session)) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "agendamentos/form.html",
+        {
+            "title": "Novo agendamento",
+            "acao": "/agendamentos",
+            "setups": _setups_ativos(session),
+            "hosts": _hosts_ativos(session),
+            "dados": {"setup_id": "", "target_host_id": "", "cron": "0 6 * * *"},
+            "erros": {},
+            "mensagem": None,
+        },
+    )
+
+
+@router.post("/agendamentos")
+def criar_agendamento(
+    request: Request,
+    session: Session = Depends(get_session),
+    setup_id: Annotated[str, Form()] = "",
+    target_host_id: Annotated[str, Form()] = "",
+    cron: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    from ..agendador import validar_cron
+
+    erros: dict = {}
+    dados = {"setup_id": setup_id, "target_host_id": target_host_id, "cron": cron.strip()}
+
+    setup = None
+    host = None
+    if setup_id.strip().isdigit():
+        setup = session.get(EnvironmentSetup, int(setup_id.strip()))
+    if setup is None:
+        erros["setup_id"] = "Selecione um setup válido."
+    elif setup.status == "arquivado":
+        erros["setup_id"] = "O setup está arquivado. Reative-o para agendar."
+
+    if target_host_id.strip().isdigit():
+        host = session.get(TargetHost, int(target_host_id.strip()))
+    if host is None:
+        erros["target_host_id"] = "Selecione uma máquina ativa válida."
+    elif host.status != "ativa":
+        erros["target_host_id"] = "A máquina está inativa. Reative-a para agendar."
+
+    msg_cron = validar_cron(dados["cron"])
+    if msg_cron:
+        erros["cron"] = msg_cron
+
+    if erros:
+        return templates.TemplateResponse(
+            request,
+            "agendamentos/form.html",
+            {
+                "title": "Novo agendamento",
+                "acao": "/agendamentos",
+                "setups": _setups_ativos(session),
+                "hosts": _hosts_ativos(session),
+                "dados": dados,
+                "erros": erros,
+                "mensagem": {"tipo": "error", "texto": "Corrija os campos destacados e tente novamente."},
+            },
+        )
+
+    agendamento = Agendamento(
+        setup_id=setup.id,
+        target_host_id=host.id,
+        cron=dados["cron"],
+        ativo=True,
+        created_by=settings.operator_name,
+        updated_by=settings.operator_name,
+    )
+    session.add(agendamento)
+    session.commit()
+    logger.info("Agendamento criado id=%s por %s", agendamento.id, settings.operator_name)
+    return RedirectResponse(url="/agendamentos?sucesso=agendamento_criado", status_code=303)
+
+
+@router.post("/agendamentos/verificar")
+def verificar_agendamentos(
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    from ..agendador import executar_vencidos
+
+    disparados = executar_vencidos(session, autor=settings.operator_name)
+    logger.info("Verificação de agendamentos: %s disparo(s)", disparados)
+    if disparados:
+        return RedirectResponse(
+            url=f"/agendamentos?sucesso=verificado&disparados={disparados}", status_code=303
+        )
+    return RedirectResponse(url="/agendamentos?sucesso=verificado", status_code=303)
+
+
+@router.post("/agendamentos/{agendamento_id}/desativar")
+def desativar_agendamento(
+    agendamento_id: int,
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    agendamento = _obter_agendamento(session, agendamento_id)
+    agendamento.ativo = False
+    agendamento.updated_at = _agora()
+    agendamento.updated_by = settings.operator_name
+    session.add(agendamento)
+    session.commit()
+    logger.info("Agendamento desativado id=%s por %s", agendamento.id, settings.operator_name)
+    return RedirectResponse(url="/agendamentos?sucesso=agendamento_desativado", status_code=303)
+
+
+@router.post("/agendamentos/{agendamento_id}/ativar")
+def ativar_agendamento(
+    agendamento_id: int,
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    agendamento = _obter_agendamento(session, agendamento_id)
+    agendamento.ativo = True
+    agendamento.updated_at = _agora()
+    agendamento.updated_by = settings.operator_name
+    session.add(agendamento)
+    session.commit()
+    logger.info("Agendamento ativado id=%s por %s", agendamento.id, settings.operator_name)
+    return RedirectResponse(url="/agendamentos?sucesso=agendamento_ativado", status_code=303)
+
+
+@router.post("/agendamentos/{agendamento_id}/excluir")
+def excluir_agendamento(
+    agendamento_id: int,
+    session: Session = Depends(get_session),
+    confirmacao: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    agendamento = _obter_agendamento(session, agendamento_id)
+    if confirmacao != "sim":
+        raise HTTPException(status_code=400, detail="Confirmação ausente para excluir o agendamento.")
+    session.delete(agendamento)
+    session.commit()
+    logger.info("Agendamento excluído id=%s por %s", agendamento_id, settings.operator_name)
+    return RedirectResponse(url="/agendamentos?sucesso=agendamento_removido", status_code=303)

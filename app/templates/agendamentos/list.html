@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Agendamentos (rotina)</h1>
+    <div class="sub">Execuções recorrentes por expressão cron (5 campos: minuto hora dia mês dia-semana).
+      Disparam revalidando setup × máquina via worker assíncrono.</div>
+  </div>
+  <div class="actions">
+    <form method="post" action="/agendamentos/verificar" style="display:inline;">
+      <button type="submit" class="btn">▶️ Verificar agora</button>
+    </form>
+    <a class="btn btn-primary" href="/agendamentos/novo">+ Novo agendamento</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if agendamentos %}
+  <table>
+    <thead>
+      <tr>
+        <th>Setup</th>
+        <th>Máquina</th>
+        <th>Cron</th>
+        <th>Ativo</th>
+        <th>Último disparo</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in agendamentos %}
+      <tr>
+        <td>
+          {% if setups.get(a.setup_id) %}
+          <a href="/setups/{{ a.setup_id }}">{{ setups[a.setup_id].nome }}</a>
+          {% else %}setup #{{ a.setup_id }}{% endif %}
+        </td>
+        <td>
+          {% if hosts.get(a.target_host_id) %}
+          <a href="/maquinas/{{ a.target_host_id }}">{{ hosts[a.target_host_id].nome }}</a>
+          {% else %}máquina #{{ a.target_host_id }}{% endif %}
+        </td>
+        <td><code>{{ a.cron }}</code></td>
+        <td>
+          {% if a.ativo %}
+          <span class="pill pill-sucesso">ativo</span>
+          {% else %}
+          <span class="pill pill-erro">inativo</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if a.ultimo_disparo %}{{ a.ultimo_disparo.strftime("%d/%m/%Y %H:%M") }}{% else %}
+          <span class="nao-informado">nunca</span>{% endif %}
+        </td>
+        <td class="actions-inline">
+          {% if a.ativo %}
+          <form method="post" action="/agendamentos/{{ a.id }}/desativar" style="display:inline;">
+            <button type="submit" class="btn btn-sm">⏸️ Desativar</button>
+          </form>
+          {% else %}
+          <form method="post" action="/agendamentos/{{ a.id }}/ativar" style="display:inline;">
+            <button type="submit" class="btn btn-sm">▶️ Ativar</button>
+          </form>
+          {% endif %}
+          <form method="post" action="/agendamentos/{{ a.id }}/excluir" style="display:inline;"
+                onsubmit="return confirm('Excluir este agendamento?');">
+            <input type="hidden" name="confirmacao" value="sim">
+            <button type="submit" class="btn btn-sm btn-danger">🗑️ Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">Nenhum agendamento. Crie o primeiro para rotinas recorrentes.</p>
+  {% endif %}
+</div>
+{% endblock %}

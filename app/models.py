@@ -77,3 +77,24 @@ class Execution(SQLModel, table=True):
     finished_at: datetime | None = Field(default=None)
     created_at: datetime = Field(default_factory=_utcnow)
     created_by: str | None = Field(default=None, max_length=120)
+
+
+class Agendamento(SQLModel, table=True):
+    """Agendamento cron de provisionamento de um setup numa máquina (feature 012).
+
+    Expressão de 5 campos (`minuto hora dia mês dia-semana`), parser caseiro.
+    Disparo recorrente reusa as guardas (004) e o worker assíncrono (008).
+    """
+
+    __tablename__ = "agendamento"
+
+    id: int | None = Field(default=None, primary_key=True)
+    setup_id: int = Field(foreign_key="environment_setup.id", index=True)
+    target_host_id: int = Field(foreign_key="target_host.id", index=True)
+    cron: str = Field(default="0 * * * *", max_length=100)
+    ativo: bool = Field(default=True, index=True)
+    ultimo_disparo: datetime | None = Field(default=None)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+    created_by: str | None = Field(default=None, max_length=120)
+    updated_by: str | None = Field(default=None, max_length=120)

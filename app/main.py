@@ -1,5 +1,6 @@
 """App FastAPI do Automatic1 Admin (interface web server-rendered)."""
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote
@@ -28,6 +29,11 @@ async def lifespan(_app: FastAPI):
     from .worker import recuperar_orfas
 
     recuperar_orfas()
+    # Feature 012 — rotina de agendamentos (cron) em segundo plano (desligável).
+    if os.getenv("AUTOMATIC1_SCHEDULER", "1") != "0":
+        from .agendador import iniciar_rotina
+
+        iniciar_rotina()
     yield
 
 

@@ -25,6 +25,7 @@ def _ambiente_autenticacao():
     os.environ.setdefault("AUTOMATIC1_API_TOKEN", "token-de-teste")
     os.environ.setdefault("AUTOMATIC1_WRITE_API_TOKEN", "token-escrita-teste")
     os.environ.setdefault("AUTOMATIC1_ASYNC", "0")  # testes: provisionamento síncrono (determinístico)
+    os.environ.setdefault("AUTOMATIC1_SCHEDULER", "0")  # testes: rotina cron desligada (sem thread)
 
 
 @pytest.fixture()
