@@ -9,6 +9,7 @@
   </div>
   <div class="nav">
     <a class="btn" href="/maquinas">← Listagem</a>
+    <a class="btn" href="/maquinas/{{ maquina.id }}/status">🩺 Verificar status</a>
     <a class="btn" href="/maquinas/{{ maquina.id }}/editar">✏️ Editar</a>
     {% if maquina.status == "ativa" %}
     <form method="get" action="/maquinas/{{ maquina.id }}/desativar" style="display:inline;">

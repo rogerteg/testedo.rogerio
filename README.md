@@ -152,6 +152,21 @@ migração ou recuperação:
 
 Documentação do fluxo: `specs/010-backup/`.
 
+## Monitoramento/status dos serviços — feature 011
+
+Consulte a **saúde da stack** de uma máquina alvo (Debian + Docker Swarm) após o
+provisionamento — consulta **somente leitura**, sem alterar estado:
+
+- Do detalhe da máquina, **🩺 Verificar status** (`GET /maquinas/{id}/status`): roda
+  `docker node ls` + `docker service ls` via SSH (runner plugável) e exibe a saída
+  **sanitizada** (segredos redigidos) com o exit code.
+- **Guardas**: máquina inativa ou credencial SSH ausente → mensagem acionável.
+- **API** (leitura, feature 006): `GET /api/maquinas/{id}/status` →
+  `{"status": "sucesso"|"erro", "saida": ..., "exit_code": ...}` (200/400/404/503).
+- A consulta **não cria** `Execution` nem persiste histórico (v1 = consulta pontual).
+
+Documentação do fluxo: `specs/011-monitor/`.
+
 ## Instalador próprio do Automatic1 — feature 005
 
 Instalador **cliente** para VPS Debian 11/12 (código shell em `installer/`), estilo auto-instalador dirigido pelo catálogo:

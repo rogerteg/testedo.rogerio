@@ -904,6 +904,48 @@ def reativar_maquina(
 
 
 # ---------------------------------------------------------------------------
+# Feature 011 — Monitoramento/status dos serviços (leitura, sem persistir)
+# ---------------------------------------------------------------------------
+
+@router.get("/maquinas/{maquina_id}/status")
+def verificar_status_maquina(
+    request: Request,
+    maquina_id: int,
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    from ..monitor import consultar_status
+
+    maquina = _obter_maquina(session, maquina_id)
+    runner = criar_runner()
+
+    erros: list[str] = []
+    if maquina.status != "ativa":
+        erros.append("A máquina alvo está inativa. Reative-a para consultar o status.")
+    if runner is None:
+        erros.append(
+            "Credencial SSH não configurada. Defina AUTOMATIC1_SSH_KEY "
+            "(ou AUTOMATIC1_RUNNER=fake para simular) no ambiente."
+        )
+
+    resultado = None
+    if not erros:
+        resultado = consultar_status(runner, host=maquina.identificacao)
+
+    return templates.TemplateResponse(
+        request,
+        "maquinas/status.html",
+        {
+            "title": f"Status: {maquina.nome}",
+            "maquina": maquina,
+            "host_status_label": HOST_STATUS_LABEL,
+            "erros": erros,
+            "resultado": resultado,
+            "mensagem": None,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # Feature 003 — Execuções (US2)
 # ---------------------------------------------------------------------------
 

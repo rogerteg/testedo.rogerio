@@ -287,3 +287,44 @@ def api_execucao_detalhe(
     if execucao is None:
         raise HTTPException(status_code=404, detail={"erros": {"execucao_id": "Execução não encontrada."}})
     return _execucao_detalhe_json(execucao)
+
+
+# ---------------------------------------------------------------------------
+# Feature 011 — Monitoramento/status dos serviços (leitura)
+# ---------------------------------------------------------------------------
+
+@router.get("/maquinas/{maquina_id}/status", dependencies=[Depends(exigir_token)])
+def api_maquina_status(
+    maquina_id: int,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Consulta o status da stack da máquina (somente leitura) — feature 011.
+
+    Retorna ``{"status": "sucesso"|"erro", "saida": ..., "exit_code": ...}``.
+    Erros acionáveis: máquina inativa (400) / não encontrada (404) / sem runner (503).
+    """
+    from ..monitor import consultar_status
+    from ..runners import criar_runner
+
+    maquina = session.get(TargetHost, maquina_id)
+    if maquina is None:
+        raise HTTPException(status_code=404, detail={"erros": {"maquina_id": "Máquina não encontrada."}})
+    if maquina.status != "ativa":
+        raise HTTPException(
+            status_code=400,
+            detail={"erros": {"maquina_id": "A máquina está inativa. Reative-a para consultar o status."}},
+        )
+
+    runner = criar_runner()
+    if runner is None:
+        raise HTTPException(
+            status_code=503,
+            detail={"erros": {"runner": "Credencial SSH não configurada (AUTOMATIC1_SSH_KEY)."}},
+        )
+
+    resultado = consultar_status(runner, host=maquina.identificacao)
+    return {
+        "status": "sucesso" if resultado["ok"] else "erro",
+        "saida": resultado["saida"],
+        "exit_code": resultado["exit_code"],
+    }

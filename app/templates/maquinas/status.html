@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Automatic1 Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ maquina.nome }} <span class="pill pill-{{ maquina.status }}">{{ host_status_label.get(maquina.status, maquina.status) }}</span></h1>
+    <div class="sub">Status dos serviços (Docker Swarm) da máquina alvo — consulta somente leitura.</div>
+  </div>
+  <div class="nav">
+    <a class="btn" href="/maquinas/{{ maquina.id }}">← Detalhe da máquina</a>
+    <a class="btn" href="/maquinas/{{ maquina.id }}/status">🔄 Atualizar</a>
+  </div>
+</div>
+
+{% if erros %}
+<div class="alert alert-error">
+  <strong>Não foi possível consultar o status.</strong>
+  <ul>
+    {% for e in erros %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+</div>
+{% elif resultado %}
+<div class="card">
+  <h2>
+    Resultado
+    {% if resultado.ok %}
+    <span class="pill pill-sucesso">sucesso</span>
+    {% else %}
+    <span class="pill pill-erro">erro (exit {{ resultado.exit_code }})</span>
+    {% endif %}
+  </h2>
+  <pre class="log">{{ resultado.saida }}</pre>
+</div>
+{% endif %}
+{% endblock %}
