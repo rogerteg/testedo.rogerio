@@ -47,6 +47,8 @@ def _setup_para_json(s: EnvironmentSetup) -> dict:
         "hash": s.hash,
         "licenca": s.licenca,
         "categoria": s.categoria,
+        "dominio": s.dominio,
+        "variaveis_deploy": s.variaveis_deploy,
         "status": s.status,
         "atualizado_em": _dt(s.updated_at),
     }
@@ -137,6 +139,7 @@ def api_execucoes(
 _CHAVES_SETUP = (
     "nome", "descricao", "plataforma_alvo", "origem_asset",
     "versao", "hash", "licenca", "status", "categoria",
+    "dominio", "variaveis_deploy",
 )
 _CHAVES_MAQUINA = ("nome", "identificacao", "plataforma_alvo", "descricao")
 

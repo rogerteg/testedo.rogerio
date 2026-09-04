@@ -21,6 +21,9 @@ class EnvironmentSetup(SQLModel, table=True):
     versao: str | None = Field(default=None, max_length=64)
     hash: str | None = Field(default=None, max_length=256)
     licenca: str | None = Field(default=None, max_length=500)
+    # Feature 009 — config de deploy por setup (sem segredos; const. IV).
+    dominio: str | None = Field(default=None, max_length=255)
+    variaveis_deploy: str | None = Field(default=None, max_length=4000)
     status: str = Field(default="rascunho", index=True, max_length=32)
     categoria: str | None = Field(default=None, index=True, max_length=32)
     resultado_ultima_execucao: str | None = Field(default=None, max_length=1000)

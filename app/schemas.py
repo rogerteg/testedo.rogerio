@@ -28,6 +28,13 @@ SEMVER_RE = re.compile(
     r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
 
+# Feature 009 — config de deploy por setup (domínio/vars).
+# Linha válida: CHAVE=valor, chave [A-Z_][A-Z0-9_]* (sem segredo).
+_VARIAVEL_DEPLOY_LINHA = re.compile(r"^([A-Z_][A-Z0-9_]*)=(.*)$")
+VARIAVEIS_DEPLOY_LIMITE = 4000
+DOMINIO_LIMITE = 255
+
+
 # Campos de texto livre sujeitos à regra anti-segredo (FR-013).
 CAMPOS_TEXTO = (
     "nome",
@@ -72,6 +79,74 @@ def rotulo_categoria(valor: str | None) -> str:
     if not valor:
         return "não classificada"
     return CATEGORIA_LABEL.get(valor, valor)
+
+
+def parse_variaveis_deploy(texto: str | None) -> list[tuple[str, str]]:
+    """Retorna pares ``(CHAVE, valor)`` das linhas válidas (feature 009).
+
+    Linhas inválidas ou vazias são ignoradas (validação estrita fica no
+    ``validar_campos``). Usado pelo provisionador p/ montar os ``export``.
+    """
+    pares: list[tuple[str, str]] = []
+    for linha in (texto or "").splitlines():
+        m = _VARIAVEL_DEPLOY_LINHA.match(linha.strip())
+        if m:
+            pares.append((m.group(1), m.group(2)))
+    return pares
+
+
+def validar_deploy(dados: dict) -> dict:
+    """Valida os campos de config de deploy (feature 009).
+
+    Retorna ``{campo: mensagem}`` para ``dominio``/``variaveis_deploy``
+    (vazio = válido). Sem segredos (FR-013/constituição IV); chaves no formato
+    ``[A-Z_][A-Z0-9_]*``; valores sem quebras de linha embutidas.
+    """
+    erros: dict = {}
+
+    dominio = (dados.get("dominio") or "").strip()
+    if dominio:
+        if len(dominio) > DOMINIO_LIMITE:
+            erros["dominio"] = f"O domínio deve ter no máximo {DOMINIO_LIMITE} caracteres."
+        elif contem_segredo(dominio):
+            erros["dominio"] = (
+                "Não são permitidos segredos/credenciais no domínio; informe apenas "
+                "o domínio público (FR-013)."
+            )
+
+    variaveis = (dados.get("variaveis_deploy") or "")
+    if variaveis:
+        if len(variaveis) > VARIAVEIS_DEPLOY_LIMITE:
+            erros["variaveis_deploy"] = (
+                f"As variáveis devem ter no máximo {VARIAVEIS_DEPLOY_LIMITE} caracteres."
+            )
+        else:
+            for linha in variaveis.splitlines():
+                linha = linha.strip()
+                if not linha:
+                    continue
+                m = _VARIAVEL_DEPLOY_LINHA.match(linha)
+                if not m:
+                    erros["variaveis_deploy"] = (
+                        "Cada linha deve estar no formato CHAVE=valor, com chave "
+                        "em MAIÚSCULAS (ex.: AUTOMATIC1_N8N_DOMAIN=n8n.exemplo.com)."
+                    )
+                    break
+                if contem_segredo(linha):
+                    erros["variaveis_deploy"] = (
+                        "Não são permitidos segredos/credenciais nas variáveis de "
+                        "deploy; informe apenas parâmetros não secretos (FR-013)."
+                    )
+                    break
+                # Valor não pode ter quebra de linha embutida (linha única).
+                if "\n" in m.group(2) or "\r" in m.group(2):
+                    erros["variaveis_deploy"] = (
+                        "Valores com quebras de linha não são permitidos."
+                    )
+                    break
+
+    return erros
+
 
 
 def contem_segredo(texto: str) -> bool:
@@ -138,6 +213,9 @@ def validar_campos(dados: dict) -> dict:
                 "Não são permitidos segredos/credenciais neste campo; informe apenas "
                 "referências ou placeholders (FR-013)."
             )
+
+    # Feature 009 — config de deploy por setup (domínio/vars, sem segredos).
+    erros.update(validar_deploy(dados))
 
     return erros
 

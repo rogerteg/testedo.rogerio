@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from sqlmodel import Session, select
 
 from .models import EnvironmentSetup, Execution, TargetHost
+from .schemas import parse_variaveis_deploy
 
 if TYPE_CHECKING:  # evita import circular pesado p/ type-check
     from .runners import Runner
@@ -36,12 +37,33 @@ def _eh_origem_executavel(origem: str | None) -> bool:
     return origem.startswith(("http://", "https://")) and origem.endswith(".sh")
 
 
+def _aspas_shell(valor: str) -> str:
+    """Escapa um valor para aspas simples de shell (sem quebras de linha)."""
+    return "'" + valor.replace("'", "'\\''") + "'"
+
+
+def _export_config_deploy(setup: "EnvironmentSetup") -> list[str]:
+    """Linhas ``export`` da config de deploy do setup (feature 009/D2).
+
+    Exporta ``AUTOMATIC1_DOMAIN`` (quando ``dominio`` informado) e cada
+    ``CHAVE=valor`` de ``variaveis_deploy``. Valores validados sem segredo na
+    escrita (schemas); aqui apenas o quoting seguro para shell remoto.
+    """
+    linhas: list[str] = []
+    if setup.dominio:
+        linhas.append(f"export AUTOMATIC1_DOMAIN={_aspas_shell(setup.dominio)}")
+    for chave, valor in parse_variaveis_deploy(setup.variaveis_deploy):
+        linhas.append(f"export {chave}={_aspas_shell(valor)}")
+    return linhas
+
+
 def montar_comando(setup: "EnvironmentSetup") -> str:
     """Monta o comando idempotente executado no host (feature 004).
 
     Baixa o asset de ``origem_asset``, verifica sha256 quando ``hash`` presente
     (divergência aborta antes de executar) e roda via ``bash``. Sempre limpa o
-    diretório temporário e propaga o código de saída.
+    diretório temporário e propaga o código de saída. Config de deploy (009) é
+    exportada antes do download (o asset instalador lê as variáveis).
     """
     origem = setup.origem_asset.strip()
     partes = [
@@ -54,6 +76,9 @@ def montar_comando(setup: "EnvironmentSetup") -> str:
             "|| { echo 'ERRO: hash diverge do esperado — execução bloqueada'; rm -rf \"$tmpd\"; exit 2; }"
         )
     partes.append('bash "$tmpd/asset"; rc=$?; rm -rf "$tmpd"; exit $rc')
+    exports = _export_config_deploy(setup)
+    if exports:
+        partes = exports + partes
     return "; ".join(partes)
 
 

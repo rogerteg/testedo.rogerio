@@ -62,6 +62,8 @@ CAMPOS = [
     "versao",
     "hash",
     "licenca",
+    "dominio",
+    "variaveis_deploy",
     "status",
     "resultado_ultima_execucao",
 ]
@@ -271,6 +273,8 @@ def criar_setup(
     licenca: Annotated[str, Form()] = "",
     status: Annotated[str, Form()] = "rascunho",
     resultado_ultima_execucao: Annotated[str, Form()] = "",
+    dominio: Annotated[str, Form()] = "",
+    variaveis_deploy: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     dados = {
         "nome": nome.strip(),
@@ -280,6 +284,8 @@ def criar_setup(
         "versao": versao.strip(),
         "hash": hash.strip(),
         "licenca": licenca.strip(),
+        "dominio": dominio.strip(),
+        "variaveis_deploy": variaveis_deploy,
         "status": status.strip() or "rascunho",
         "resultado_ultima_execucao": resultado_ultima_execucao.strip(),
     }
@@ -493,6 +499,8 @@ def editar_setup(
     licenca: Annotated[str, Form()] = "",
     status: Annotated[str, Form()] = "rascunho",
     resultado_ultima_execucao: Annotated[str, Form()] = "",
+    dominio: Annotated[str, Form()] = "",
+    variaveis_deploy: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     setup = _obter_setup(session, setup_id)
 
@@ -504,6 +512,8 @@ def editar_setup(
         "versao": versao.strip(),
         "hash": hash.strip(),
         "licenca": licenca.strip(),
+        "dominio": dominio.strip(),
+        "variaveis_deploy": variaveis_deploy,
         "status": status.strip() or "rascunho",
         "resultado_ultima_execucao": resultado_ultima_execucao.strip(),
     }

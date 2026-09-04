@@ -121,6 +121,21 @@ Documentação do fluxo: `specs/004-provisioner/`.
 > Execuções órfãs (`em_andamento`) são recuperadas como interrompidas no startup. Documentação:
 > `specs/008-async-provisioning/`.
 
+## Config de deploy por setup — feature 009
+
+Cada setup pode carregar **configuração de deploy** (parâmetros não secretos) que o provisionamento
+(`004`/`008`) **exporta no host remoto** antes de rodar o asset instalador:
+
+- **Domínio/subdomínio** (`dominio`): ex. `n8n.exemplo.com` — exportado como `AUTOMATIC1_DOMAIN`.
+- **Variáveis de deploy** (`variaveis_deploy`): linhas `CHAVE=valor` (chave em MAIÚSCULAS) — exportadas
+  como `export CHAVE='valor'`. Habilita roteamento Traefik/parametrização real por app.
+- **Sem segredos** (constituição IV): valores com sinais de segredo são rejeitados na UI e na API;
+  senhas/tokens ficam no cofre/ambiente, referenciados pelo script instalador.
+- Config editável no form do setup, visível no detalhe e presente no JSON da API
+  (`GET`/`POST /api/setups` — features 006/007).
+
+Documentação do fluxo: `specs/009-deploy-config/`.
+
 ## Instalador próprio do Automatic1 — feature 005
 
 Instalador **cliente** para VPS Debian 11/12 (código shell em `installer/`), estilo auto-instalador dirigido pelo catálogo:

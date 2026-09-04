@@ -36,6 +36,13 @@ def _migrar_schema() -> None:
                 "finished_at": "DATETIME",
             },
         )
+        _garantir_colunas(
+            "environment_setup",
+            {
+                "dominio": "VARCHAR(255)",
+                "variaveis_deploy": "TEXT",
+            },
+        )
 
 
 def init_db() -> None:

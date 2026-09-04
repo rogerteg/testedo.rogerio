@@ -57,6 +57,20 @@
     </div>
 
     <div class="field">
+      <label for="dominio">Domínio / subdomínio</label>
+      <input type="text" id="dominio" name="dominio" value="{{ dados.dominio }}" maxlength="255" placeholder="ex.: n8n.exemplo.com">
+      <div class="hint">Domínio público onde o serviço será publicado (ex.: roteamento Traefik). Exportado como AUTOMATIC1_DOMAIN no provisionamento.</div>
+      {% if erros.dominio %}<div class="field-error">{{ erros.dominio }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="variaveis_deploy">Variáveis de deploy</label>
+      <textarea id="variaveis_deploy" name="variaveis_deploy" rows="5" maxlength="4000">{{ dados.variaveis_deploy }}</textarea>
+      <div class="hint">Uma por linha, no formato CHAVE=valor (chave em MAIÚSCULAS). Apenas parâmetros <strong>não secretos</strong> — senhas/tokens ficam no cofre/ambiente (constituição IV). Exportadas no provisionamento.</div>
+      {% if erros.variaveis_deploy %}<div class="field-error">{{ erros.variaveis_deploy }}</div>{% endif %}
+    </div>
+
+    <div class="field">
       <label for="status">Status</label>
       <select id="status" name="status">
         {% for valor, rotulo in status_opcoes %}

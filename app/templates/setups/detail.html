@@ -29,6 +29,13 @@
   <dt>Origem do asset</dt><dd>{{ setup.origem_asset }}</dd>
   <dt>Hash / checksum</dt><dd>{% if setup.hash %}<code>{{ setup.hash }}</code>{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
   <dt>Licença / compliance</dt><dd>{% if setup.licenca %}{{ setup.licenca }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Domínio</dt><dd>{% if setup.dominio %}<code>{{ setup.dominio }}</code>{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
+  <dt>Variáveis de deploy</dt>
+  <dd>
+    {% if setup.variaveis_deploy %}
+      <pre class="log">{{ setup.variaveis_deploy }}</pre>
+    {% else %}<span class="nao-informado">não informado</span>{% endif %}
+  </dd>
   <dt>Descrição</dt><dd>{% if setup.descricao %}{{ setup.descricao }}{% else %}<span class="nao-informado">não informado</span>{% endif %}</dd>
   <dt>Última execução</dt>
   <dd>
