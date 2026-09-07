@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>{{ title }}</h1>
-    <div class="sub">Agende execuções recorrentes (cron) de um setup numa máquina ativa.</div>
+    <div class="sub">Agende execuções recorrentes de um setup numa máquina ativa.</div>
   </div>
 </div>
 
@@ -34,12 +34,66 @@
     </div>
 
     <div class="field">
-      <label for="cron">Expressão cron <span class="req">*</span></label>
-      <input type="text" id="cron" name="cron" value="{{ dados.cron }}" maxlength="100"
-             placeholder="minuto hora dia mês dia-semana — ex.: 0 6 * * *">
-      <div class="hint">5 campos. Suporta <code>*</code>, <code>*/passo</code> (ex.: <code>*/5</code>)
-        e listas (ex.: <code>1,15</code>). Ex.: <code>0 6 * * *</code> = todo dia 06:00.
-        Dia da semana: 0=domingo … 6=sábado.</div>
+      <label>Quando executar <span class="req">*</span></label>
+      <input type="hidden" id="cron" name="cron" value="{{ dados.cron }}">
+
+      <ul class="cron-opcoes">
+        <li>
+          <label><input type="radio" name="freq" value="minuto"><span>A cada minuto</span></label>
+        </li>
+
+        <li>
+          <label><input type="radio" name="freq" value="intervalo"><span>A cada N minutos</span></label>
+          <div class="cron-detalhe" id="int-controles">
+            <span>a cada</span>
+            <input type="number" id="freq-n" min="1" max="59" value="5">
+            <span>minutos</span>
+          </div>
+        </li>
+
+        <li>
+          <label><input type="radio" name="freq" value="diario"><span>Diariamente</span></label>
+          <div class="cron-detalhe" id="d-controles">
+            <span>às</span>
+            <select id="d-hora"></select><span>:</span><select id="d-min"></select>
+          </div>
+        </li>
+
+        <li>
+          <label><input type="radio" name="freq" value="semanal"><span>Semanalmente</span></label>
+          <div class="cron-detalhe" id="s-controles">
+            <span>nos dias</span>
+            <label><input type="checkbox" value="0"> dom</label>
+            <label><input type="checkbox" value="1"> seg</label>
+            <label><input type="checkbox" value="2"> ter</label>
+            <label><input type="checkbox" value="3"> qua</label>
+            <label><input type="checkbox" value="4"> qui</label>
+            <label><input type="checkbox" value="5"> sex</label>
+            <label><input type="checkbox" value="6"> sáb</label>
+            <span>às</span>
+            <select id="s-hora"></select><span>:</span><select id="s-min"></select>
+          </div>
+        </li>
+
+        <li>
+          <label><input type="radio" name="freq" value="mensal"><span>Mensalmente</span></label>
+          <div class="cron-detalhe" id="m-controles">
+            <span>no dia</span>
+            <select id="m-dia"></select>
+            <span>às</span>
+            <select id="m-hora"></select><span>:</span><select id="m-min"></select>
+          </div>
+        </li>
+
+        <li>
+          <label><input type="radio" name="freq" value="avancado"><span>Avançado (cron)</span></label>
+          <div class="cron-detalhe" id="adv-controles">
+            <input type="text" id="adv-cron" placeholder="ex.: 0 6 * * *" maxlength="100">
+          </div>
+        </li>
+      </ul>
+
+      <div class="cron-resumo" id="cron-resumo"></div>
       {% if erros.cron %}<div class="field-error">{{ erros.cron }}</div>{% endif %}
     </div>
 
@@ -49,4 +103,147 @@
     </div>
   </form>
 </div>
+
+<script>
+(function () {
+  var z2 = function (n) { return (n < 10 ? '0' : '') + n; };
+  var DOW_PLURAL = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'];
+
+  function preencherSelect(id, ini, fim) {
+    var sel = document.getElementById(id);
+    var html = '';
+    for (var i = ini; i <= fim; i++) html += '<option value="' + i + '">' + z2(i) + '</option>';
+    sel.innerHTML = html;
+  }
+  preencherSelect('d-hora', 0, 23); preencherSelect('d-min', 0, 59);
+  preencherSelect('s-hora', 0, 23); preencherSelect('s-min', 0, 59);
+  preencherSelect('m-dia', 1, 31); preencherSelect('m-hora', 0, 23); preencherSelect('m-min', 0, 59);
+
+  var DETALHE = {
+    intervalo: 'int-controles',
+    diario: 'd-controles',
+    semanal: 's-controles',
+    mensal: 'm-controles',
+    avancado: 'adv-controles'
+  };
+  var opcoes = document.querySelectorAll('input[name="freq"]');
+  var nIntervalo = document.getElementById('freq-n');
+  var advCron = document.getElementById('adv-cron');
+  var cronHidden = document.getElementById('cron');
+  var resumoEl = document.getElementById('cron-resumo');
+  var ehNum = function (s) { return /^\d+$/.test(s); };
+
+  function atual() {
+    for (var i = 0; i < opcoes.length; i++) if (opcoes[i].checked) return opcoes[i].value;
+    return '';
+  }
+
+  function textoResumo(cron) {
+    var p = (cron || '').trim().split(/\s+/);
+    if (p.length !== 5) return '';
+    var m = p[0], h = p[1], dom = p[2], mes = p[3], dow = p[4];
+    if (p.join(' ') === '* * * * *') return 'A cada minuto, todos os dias.';
+    var passo = m.match(/^\*\/(\d+)$/);
+    if (passo && h === '*' && dom === '*' && mes === '*' && dow === '*')
+      return 'A cada ' + passo[1] + ' minutos, todos os dias.';
+    if (ehNum(m) && ehNum(h) && dom === '*' && mes === '*' && dow === '*')
+      return 'Todos os dias às ' + z2(+h) + ':' + z2(+m) + '.';
+    if (ehNum(m) && ehNum(h) && dom === '*' && mes === '*' && /^[0-6](,[0-6])*$/.test(dow)) {
+      var dias = dow.split(',').map(function (x) { return DOW_PLURAL[+x]; });
+      var txt = dias.length > 1 ? dias.slice(0, -1).join(', ') + ' e ' + dias[dias.length - 1] : dias[0];
+      return 'Nas ' + txt + ', às ' + z2(+h) + ':' + z2(+m) + '.';
+    }
+    if (ehNum(m) && ehNum(h) && ehNum(dom) && mes === '*' && dow === '*')
+      return 'No dia ' + (+dom) + ' de cada mês às ' + z2(+h) + ':' + z2(+m) + '.';
+    return '';
+  }
+
+  function atualizar() {
+    var v = atual(), cron = '';
+    Object.keys(DETALHE).forEach(function (k) {
+      document.getElementById(DETALHE[k]).hidden = true;
+    });
+    if (v === 'minuto') {
+      cron = '* * * * *';
+    } else if (v === 'intervalo') {
+      document.getElementById('int-controles').hidden = false;
+      cron = '*/' + (parseInt(nIntervalo.value, 10) || 5) + ' * * * *';
+    } else if (v === 'diario') {
+      document.getElementById('d-controles').hidden = false;
+      cron = document.getElementById('d-min').value + ' ' + document.getElementById('d-hora').value + ' * * *';
+    } else if (v === 'semanal') {
+      var checked = Array.prototype.filter.call(
+        document.querySelectorAll('#s-controles input[type="checkbox"]'),
+        function (c) { return c.checked; }
+      ).map(function (c) { return c.value; }).sort();
+      if (checked.length === 0) checked = ['1'];
+      cron = document.getElementById('s-min').value + ' ' + document.getElementById('s-hora').value + ' * * ' + checked.join(',');
+      document.getElementById('s-controles').hidden = false;
+    } else if (v === 'mensal') {
+      document.getElementById('m-controles').hidden = false;
+      cron = document.getElementById('m-min').value + ' ' + document.getElementById('m-hora').value + ' ' +
+             document.getElementById('m-dia').value + ' * *';
+    } else if (v === 'avancado') {
+      document.getElementById('adv-controles').hidden = false;
+      if (advCron.value.trim() === '' && cronHidden.value.trim() !== '') {
+        advCron.value = cronHidden.value.trim();
+      }
+      cron = advCron.value.trim();
+    }
+    cronHidden.value = cron;
+    var resumo = textoResumo(cron);
+    resumoEl.innerHTML = resumo ? '<strong>Quando roda:</strong> ' + resumo : '';
+  }
+
+  function detectar(cron) {
+    var p = (cron || '').trim().split(/\s+/);
+    if (p.length !== 5) { advCron.value = (cron || '').trim(); return 'avancado'; }
+    if (cron.trim() === '* * * * *') return 'minuto';
+    var passo = p[0].match(/^\*\/(\d+)$/);
+    if (passo && p[1] === '*' && p[2] === '*' && p[3] === '*' && p[4] === '*') {
+      nIntervalo.value = passo[1];
+      return 'intervalo';
+    }
+    if (ehNum(p[0]) && ehNum(p[1])) {
+      if (p[2] === '*' && p[3] === '*' && p[4] === '*') {
+        document.getElementById('d-hora').value = +p[1];
+        document.getElementById('d-min').value = +p[0];
+        return 'diario';
+      }
+      if (p[2] === '*' && p[3] === '*' && /^[0-6](,[0-6])*$/.test(p[4])) {
+        document.getElementById('s-hora').value = +p[1];
+        document.getElementById('s-min').value = +p[0];
+        document.querySelectorAll('#s-controles input[type="checkbox"]').forEach(function (c) {
+          c.checked = p[4].split(',').indexOf(c.value) !== -1;
+        });
+        return 'semanal';
+      }
+      if (ehNum(p[2]) && p[3] === '*' && p[4] === '*') {
+        document.getElementById('m-dia').value = +p[2];
+        document.getElementById('m-hora').value = +p[1];
+        document.getElementById('m-min').value = +p[0];
+        return 'mensal';
+      }
+    }
+    advCron.value = cron.trim();
+    return 'avancado';
+  }
+
+  function escolher(valor) {
+    opcoes.forEach(function (r) { r.checked = (r.value === valor); });
+    atualizar();
+  }
+  opcoes.forEach(function (r) { r.addEventListener('change', function () { escolher(r.value); }); });
+  nIntervalo.addEventListener('input', atualizar);
+  advCron.addEventListener('input', atualizar);
+  ['d-hora', 'd-min', 's-hora', 's-min', 'm-dia', 'm-hora', 'm-min'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', atualizar);
+  });
+  document.querySelectorAll('#s-controles input[type="checkbox"]').forEach(function (c) {
+    c.addEventListener('change', atualizar);
+  });
+
+  escolher(detectar(cronHidden.value));
+})();
+</script>
 {% endblock %}
